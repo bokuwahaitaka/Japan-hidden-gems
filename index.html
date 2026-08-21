@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Japan Hidden Gems</title>
   <meta name="description" content="Discover Japanese songs loved in Japan but still under-discovered overseas." />
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <header class="site-header">
@@ -83,6 +83,38 @@
       </div>
     </section>
 
+
+    <section id="songRequestSection" class="shell section compact japan-only">
+      <p class="eyebrow dark">ADD A HIDDEN GEM</p>
+      <h2>Recommend a song to the world.</h2>
+      <p class="section-copy">
+        Paste a public YouTube link. We will read its title and channel,
+        prevent duplicates, and add it to the ranking immediately.
+      </p>
+      <form id="songRequestForm" class="song-request-form">
+        <label class="form-field" for="songRequestUrl">
+          <span>YouTube URL</span>
+          <input
+            id="songRequestUrl"
+            class="text-input song-url-input"
+            type="url"
+            inputmode="url"
+            autocomplete="url"
+            placeholder="https://www.youtube.com/watch?v=..."
+            required
+          />
+        </label>
+        <button id="songRequestSubmit" class="button profile-submit" type="submit">
+          Add to ranking
+        </button>
+      </form>
+      <p id="songRequestNote" class="form-error" aria-live="polite"></p>
+      <p class="sample-note">
+        Japan-profile listeners can add up to five songs in 24 hours.
+        Only public YouTube videos can be added.
+      </p>
+    </section>
+
     <section id="ratingSections" class="rating-sections"></section>
 
     <section class="shell section compact">
@@ -157,6 +189,6 @@
     </div>
   </footer>
 
-<script type="module" src="app.js?v=6"></script>
+<script type="module" src="app.js?v=7"></script>
 </body>
 </html>
