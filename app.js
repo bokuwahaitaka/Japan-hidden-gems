@@ -2,8 +2,13 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = "https://erfidvsxhhxogthyikgr.supabase.co";
 const SUPABASE_KEY = "sb_publishable_ZFx5EEhesI7GfwX9eWyYpQ_4NKrb2Ge";
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
 });
 
 const MIN_JAPAN_VOTES = 5;
@@ -11,81 +16,153 @@ const MIN_OVERSEAS_RESPONSES = 5;
 const MIN_OVERSEAS_RATINGS = 3;
 
 let songs = [];
-let currentUser = null;
+let ratings = [];
+let recommendations = [];
 let audience = null;
+let currentUser = null;
 let busy = false;
 
-const $ = (s) => document.querySelector(s);
+const $ = (selector) => document.querySelector(selector);
 const cards = $("#cards");
-const ratingSections = $("#ratingSections");
 const sortSelect = $("#sortSelect");
+const ratingSections = $("#ratingSections");
 const statusBar = $("#statusBar");
+
+function escapeHtml(value = "") {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  }[char]));
+}
 
 function showStatus(message, type = "success") {
   statusBar.textContent = message;
-  statusBar.className = `status-bar ${type}`;
+  statusBar.className = `status ${type}`;
   clearTimeout(showStatus.timer);
-  showStatus.timer = setTimeout(() => statusBar.className = "status-bar hidden", 3500);
-}
-
-function escapeHtml(value = "") {
-  return String(value).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+  showStatus.timer = setTimeout(() => {
+    statusBar.className = "status hidden";
+  }, 3200);
 }
 
 function youtubeEmbedUrl(url) {
   if (!url) return null;
+
   try {
-    const u = new URL(url);
+    const parsed = new URL(url);
     let id = null;
-    if (u.hostname.includes("youtu.be")) id = u.pathname.split("/").filter(Boolean)[0];
-    if (u.hostname.includes("youtube.com")) {
-      id = u.searchParams.get("v") || (u.pathname.startsWith("/shorts/") ? u.pathname.split("/")[2] : null) || (u.pathname.startsWith("/embed/") ? u.pathname.split("/")[2] : null);
+
+    if (parsed.hostname.includes("youtu.be")) {
+      id = parsed.pathname.split("/").filter(Boolean)[0];
+    } else if (parsed.hostname.includes("youtube.com")) {
+      id = parsed.searchParams.get("v");
+
+      if (!id && parsed.pathname.startsWith("/shorts/")) {
+        id = parsed.pathname.split("/")[2];
+      }
+
+      if (!id && parsed.pathname.startsWith("/embed/")) {
+        id = parsed.pathname.split("/")[2];
+      }
     }
+
     return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}` : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 async function ensureAnonymousUser() {
-  const { data: existing } = await supabase.auth.getSession();
-  if (existing.session?.user) {
-    currentUser = existing.session.user;
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+
+  if (sessionData.session?.user) {
+    currentUser = sessionData.session.user;
     return;
   }
+
   const { data, error } = await supabase.auth.signInAnonymously();
   if (error) throw error;
+
   currentUser = data.user;
 }
 
 async function loadAll() {
-  cards.innerHTML = '<p class="loading">Loading songsâ¦</p>';
+  const [
+    { data: songRows, error: songsError },
+    { data: ratingRows, error: ratingsError },
+    { data: recommendationRows, error: recommendationsError }
+  ] = await Promise.all([
+    supabase
+      .from("songs")
+      .select("id,title,artist,year,youtube_url")
+      .order("id", { ascending: true }),
 
-  const [songsResult, metricsResult, myRecResult, myRatingsResult] = await Promise.all([
-    supabase.from("songs").select("id,title,artist,year,youtube_url").order("id", { ascending: true }),
-    supabase.rpc("get_song_metrics"),
-    supabase.from("recommendations").select("song_id,recommended"),
-    supabase.from("ratings").select("song_id,heard_before,rating")
+    supabase
+      .from("ratings")
+      .select("song_id,user_id,heard_before,rating"),
+
+    supabase
+      .from("recommendations")
+      .select("song_id,user_id,recommended")
   ]);
 
-  for (const result of [songsResult, metricsResult, myRecResult, myRatingsResult]) {
-    if (result.error) throw result.error;
-  }
+  if (songsError) throw songsError;
+  if (ratingsError) throw ratingsError;
+  if (recommendationsError) throw recommendationsError;
 
-  const metricsBySong = new Map((metricsResult.data ?? []).map((m) => [Number(m.song_id), m]));
-  const recBySong = new Map((myRecResult.data ?? []).map((r) => [Number(r.song_id), r]));
-  const ratingBySong = new Map((myRatingsResult.data ?? []).map((r) => [Number(r.song_id), r]));
+  ratings = ratingRows ?? [];
+  recommendations = recommendationRows ?? [];
 
-  songs = (songsResult.data ?? []).map((song) => {
-    const m = metricsBySong.get(Number(song.id)) ?? {};
-    const japan = m.japan_pct == null ? null : Number(m.japan_pct);
-    const awareness = m.awareness_pct == null ? null : Number(m.awareness_pct);
-    const overseas = m.overseas_rating == null ? null : Number(m.overseas_rating);
-    const score = japan !== null && awareness !== null && overseas !== null
-      ? Number((japan * (overseas / 5) * (1 - awareness / 100)).toFixed(1))
+  songs = (songRows ?? []).map((song) => {
+    const songRatings = ratings.filter((row) => row.song_id === song.id);
+    const songRecommendations = recommendations.filter((row) => row.song_id === song.id);
+
+    const recommendationTotal = songRecommendations.length;
+    const recommendationCount = songRecommendations.filter((row) => row.recommended === true).length;
+
+    const overseasTotal = songRatings.length;
+    const knownCount = songRatings.filter((row) => row.heard_before === true).length;
+
+    const postListenRatings = songRatings.filter(
+      (row) => row.heard_before === false && row.rating !== null
+    );
+
+    const averageRating = postListenRatings.length
+      ? postListenRatings.reduce((sum, row) => sum + Number(row.rating), 0) / postListenRatings.length
       : null;
 
-    const japanVotes = Number(m.japan_votes ?? 0);
-    const overseasResponses = Number(m.overseas_responses ?? 0);
-    const postListenRatings = Number(m.post_listen_ratings ?? 0);
+    const japan = recommendationTotal
+      ? (recommendationCount / recommendationTotal) * 100
+      : null;
+
+    const awareness = overseasTotal
+      ? (knownCount / overseasTotal) * 100
+      : null;
+
+    const overseas = averageRating !== null
+      ? Number(averageRating.toFixed(2))
+      : null;
+
+    const score =
+      japan !== null && awareness !== null && overseas !== null
+        ? Number((japan * (overseas / 5) * (1 - awareness / 100)).toFixed(1))
+        : null;
+
+    const provisional =
+      recommendationTotal < MIN_JAPAN_VOTES ||
+      overseasTotal < MIN_OVERSEAS_RESPONSES ||
+      postListenRatings.length < MIN_OVERSEAS_RATINGS;
+
+    const myRecommendation = currentUser
+      ? songRecommendations.find((row) => row.user_id === currentUser.id) ?? null
+      : null;
+
+    const myRating = currentUser
+      ? songRatings.find((row) => row.user_id === currentUser.id) ?? null
+      : null;
 
     return {
       ...song,
@@ -93,12 +170,12 @@ async function loadAll() {
       awareness,
       overseas,
       score,
-      japanVotes,
-      overseasResponses,
-      postListenRatings,
-      isProvisional: japanVotes < MIN_JAPAN_VOTES || overseasResponses < MIN_OVERSEAS_RESPONSES || postListenRatings < MIN_OVERSEAS_RATINGS,
-      myRecommendation: recBySong.get(Number(song.id)) ?? null,
-      myRating: ratingBySong.get(Number(song.id)) ?? null
+      provisional,
+      recommendationTotal,
+      overseasTotal,
+      postListenRatingCount: postListenRatings.length,
+      myRecommendation,
+      myRating
     };
   });
 
@@ -108,133 +185,258 @@ async function loadAll() {
 
 function renderStats() {
   $("#songCount").textContent = songs.length;
-  $("#japanVoteCount").textContent = songs.reduce((n, s) => n + s.japanVotes, 0);
-  $("#overseasResponseCount").textContent = songs.reduce((n, s) => n + s.overseasResponses, 0);
+  $("#japanVoteCount").textContent = recommendations.length;
+  $("#overseasResponseCount").textContent = ratings.length;
 }
 
-function fallback(v, f) { return v == null ? f : v; }
+function metric(value, suffix = "") {
+  return value === null ? "Collecting data" : `${Number(value.toFixed(1))}${suffix}`;
+}
+
+function safe(value, fallback) {
+  return value === null || value === undefined ? fallback : value;
+}
+
 function getSortedSongs() {
-  const list = [...songs];
+  const sorted = [...songs];
   const mode = sortSelect?.value || "score";
-  if (mode === "japan") list.sort((a,b) => fallback(b.japan,-1) - fallback(a.japan,-1));
-  else if (mode === "overseas") list.sort((a,b) => fallback(a.awareness,101) - fallback(b.awareness,101));
-  else if (mode === "rating") list.sort((a,b) => fallback(b.overseas,-1) - fallback(a.overseas,-1));
-  else list.sort((a,b) => fallback(b.score,-1) - fallback(a.score,-1));
-  return list;
-}
 
-function metric(v, suffix = "") { return v == null ? "Collecting data" : `${Number(v.toFixed(1))}${suffix}`; }
-
-function render() {
-  const sorted = getSortedSongs();
-  if (!sorted.length) {
-    cards.innerHTML = '<p class="loading">No songs yet.</p>';
-    ratingSections.innerHTML = "";
-    return;
+  if (mode === "japan") {
+    sorted.sort((a, b) => safe(b.japan, -1) - safe(a.japan, -1));
+  } else if (mode === "awareness") {
+    sorted.sort((a, b) => safe(a.awareness, 101) - safe(b.awareness, 101));
+  } else if (mode === "rating") {
+    sorted.sort((a, b) => safe(b.overseas, -1) - safe(a.overseas, -1));
+  } else {
+    sorted.sort((a, b) => safe(b.score, -1) - safe(a.score, -1));
   }
 
-  cards.innerHTML = sorted.map((s, i) => {
-    const rec = s.myRecommendation?.recommended;
+  return sorted;
+}
+
+function render() {
+  const sortedSongs = getSortedSongs();
+
+  cards.innerHTML = sortedSongs.map((song, index) => {
+    const recommended = song.myRecommendation?.recommended;
+    const scoreText = song.score === null ? "Pending" : song.score;
+    const scoreSuffix = song.score === null ? "" : " / 100";
+
     return `
       <article class="card">
-        <div class="rank">${String(i+1).padStart(2,"0")}</div>
+        <div class="rank">${String(index + 1).padStart(2, "0")}</div>
+
         <div>
-          <h3>${escapeHtml(s.title)}</h3>
-          <div class="meta">${escapeHtml(s.artist)} Â· ${escapeHtml(s.year)}</div>
-          <div class="meters">
-            <p>Japan recommendation: <strong>${metric(s.japan,"%")}</strong></p>
-            <p>Overseas awareness: <strong>${metric(s.awareness,"%")}</strong></p>
-            <p>Overseas post-listening rating: <strong>${metric(s.overseas," / 5")}</strong></p>
+          <h3>${escapeHtml(song.title)}</h3>
+          <div class="meta">${escapeHtml(song.artist)} Â· ${escapeHtml(song.year)}</div>
+
+          <div class="metrics">
+            <p>Japan recommendation: <strong>${metric(song.japan, "%")}</strong></p>
+            <p>Overseas awareness: <strong>${metric(song.awareness, "%")}</strong></p>
+            <p>Overseas post-listening rating: <strong>${metric(song.overseas, " / 5")}</strong></p>
           </div>
-          <div class="score">
-            <strong>${s.score == null ? "Pending" : s.score}</strong>
-            <span>Hidden Gem Score${s.score == null ? "" : " / 100"}</span>
-            ${s.score != null && s.isProvisional ? '<span class="provisional">Provisional</span>' : ""}
+
+          <div class="score-row">
+            <strong>${scoreText}</strong>
+            <span>Hidden Gem Score${scoreSuffix}</span>
+            ${song.score !== null && song.provisional ? '<span class="badge">Provisional</span>' : ""}
           </div>
-          <p class="sample-note">${s.japanVotes} Japan vote${s.japanVotes===1?"":"s"} Â· ${s.overseasResponses} overseas response${s.overseasResponses===1?"":"s"} Â· ${s.postListenRatings} post-listening rating${s.postListenRatings===1?"":"s"}</p>
-          <div class="card-actions">
-            <button class="action-button primary-action overseas-action" onclick="window.openRating(${s.id})">Listen & Rate</button>
-            <button class="action-button japan-action ${rec===true?"selected":""}" onclick="window.submitRecommendation(${s.id},true)">${rec===true?"Recommended â":"Recommend"}</button>
-            <button class="action-button muted-action japan-action ${rec===false?"selected":""}" onclick="window.submitRecommendation(${s.id},false)">${rec===false?"Not for me â":"Not for me"}</button>
+
+          <p class="sample-note">
+            ${song.recommendationTotal} Japan vote${song.recommendationTotal === 1 ? "" : "s"} Â·
+            ${song.overseasTotal} overseas response${song.overseasTotal === 1 ? "" : "s"} Â·
+            ${song.postListenRatingCount} post-listening rating${song.postListenRatingCount === 1 ? "" : "s"}
+          </p>
+
+          <div class="actions">
+            <button class="action primary overseas-action"
+              onclick="window.openRating(${song.id})">
+              Listen & Rate
+            </button>
+
+            <button class="action japan-action ${recommended === true ? "selected" : ""}"
+              onclick="window.submitRecommendation(${song.id}, true)">
+              ${recommended === true ? "Recommended â" : "Recommend"}
+            </button>
+
+            <button class="action japan-action ${recommended === false ? "selected" : ""}"
+              onclick="window.submitRecommendation(${song.id}, false)">
+              ${recommended === false ? "Not for me â" : "Not for me"}
+            </button>
           </div>
         </div>
-      </article>`;
+      </article>
+    `;
   }).join("");
 
-  ratingSections.innerHTML = sorted.map((s) => {
-    const embed = youtubeEmbedUrl(s.youtube_url);
-    const my = s.myRating;
+  ratingSections.innerHTML = sortedSongs.map((song) => {
+    const embed = youtubeEmbedUrl(song.youtube_url);
+    const my = song.myRating;
+
     return `
-      <section class="section rating-section" data-song-id="${s.id}">
-        <p class="eyebrow dark">RATE ${escapeHtml(s.title)}</p>
-        <h2>Have you heard this song before?</h2>
-        ${embed ? `<div class="embed-wrap"><iframe src="${embed}" title="${escapeHtml(s.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : '<div class="no-preview">A listening preview has not been added for this song yet.</div>'}
-        <div class="rating-actions">
-          <button class="action-button ${my?.heard_before===true?"selected":""}" onclick="window.submitRating(${s.id},true,null)">${my?.heard_before===true?"Yes, I knew it â":"Yes, I knew it"}</button>
+      <section class="rating-section" data-song-id="${song.id}">
+        <div class="rating-inner">
+          <p class="eyebrow dark">RATE ${escapeHtml(song.title)}</p>
+          <h2>Have you heard this song before?</h2>
+
+          ${
+            embed
+              ? `<div class="preview"><iframe src="${embed}" title="${escapeHtml(song.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
+              : `<div class="no-preview">A listening preview has not been added for this song yet.</div>`
+          }
+
+          <div class="rating-actions">
+            <button class="action ${my?.heard_before === true ? "selected" : ""}"
+              onclick="window.submitRating(${song.id}, true, null)">
+              ${my?.heard_before === true ? "Yes, I knew it â" : "Yes, I knew it"}
+            </button>
+          </div>
+
+          <h3>If not, how would you rate it after listening?</h3>
+
+          <div class="rating-actions">
+            ${[1,2,3,4,5].map((value) => `
+              <button class="action ${my?.heard_before === false && Number(my.rating) === value ? "selected" : ""}"
+                onclick="window.submitRating(${song.id}, false, ${value})">
+                ${value}${my?.heard_before === false && Number(my.rating) === value ? " â" : ""}
+              </button>
+            `).join("")}
+          </div>
+
+          ${my ? '<p class="sample-note">Choosing again updates your previous response.</p>' : ""}
         </div>
-        <h3>If not, how would you rate it after listening?</h3>
-        <div class="rating-actions">
-          ${[1,2,3,4,5].map((v) => `<button class="action-button ${my?.heard_before===false && Number(my.rating)===v?"selected":""}" onclick="window.submitRating(${s.id},false,${v})">${v}${my?.heard_before===false && Number(my.rating)===v?" â":""}</button>`).join("")}
-        </div>
-        ${my ? '<p class="sample-note">Choosing again updates your previous response.</p>' : ""}
-      </section>`;
+      </section>
+    `;
   }).join("");
 }
 
-async function withBusy(fn) {
+async function withBusy(action) {
   if (busy) return;
   busy = true;
-  document.querySelectorAll(".card-actions button,.rating-actions button").forEach((b) => b.disabled = true);
-  try { await fn(); }
-  finally {
+
+  document.querySelectorAll(".action").forEach((button) => {
+    button.disabled = true;
+  });
+
+  try {
+    await action();
+  } finally {
     busy = false;
-    document.querySelectorAll(".card-actions button,.rating-actions button").forEach((b) => b.disabled = false);
+    document.querySelectorAll(".action").forEach((button) => {
+      button.disabled = false;
+    });
   }
 }
 
 async function submitRecommendation(songId, recommended) {
-  if (audience !== "japan") return showStatus("Choose the Japan listener option first.", "error");
+  if (audience !== "japan") {
+    showStatus("Choose the Japan listener option first.", "error");
+    return;
+  }
+
   await withBusy(async () => {
-    const { error } = await supabase.from("recommendations").upsert({
-      user_id: currentUser.id,
-      song_id: songId,
-      recommended,
-      updated_at: new Date().toISOString()
-    }, { onConflict: "user_id,song_id" });
-    if (error) { console.error(error); return showStatus("Could not save your recommendation.", "error"); }
+    const existing = recommendations.find(
+      (row) => row.user_id === currentUser.id && row.song_id === songId
+    );
+
+    let result;
+
+    if (existing) {
+      result = await supabase
+        .from("recommendations")
+        .update({
+          recommended,
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", currentUser.id)
+        .eq("song_id", songId);
+    } else {
+      result = await supabase
+        .from("recommendations")
+        .insert({
+          user_id: currentUser.id,
+          song_id: songId,
+          recommended,
+          updated_at: new Date().toISOString()
+        });
+    }
+
+    if (result.error) {
+      console.error(result.error);
+      showStatus("Could not save your recommendation.", "error");
+      return;
+    }
+
     showStatus("Your recommendation was saved.");
     await loadAll();
   });
 }
 
 async function submitRating(songId, heardBefore, rating) {
-  if (audience !== "overseas") return showStatus("Choose the outside-Japan listener option first.", "error");
+  if (audience !== "overseas") {
+    showStatus("Choose the outside-Japan listener option first.", "error");
+    return;
+  }
+
   await withBusy(async () => {
-    const { error } = await supabase.from("ratings").upsert({
-      user_id: currentUser.id,
-      song_id: songId,
+    const existing = ratings.find(
+      (row) => row.user_id === currentUser.id && row.song_id === songId
+    );
+
+    const payload = {
       heard_before: heardBefore,
       rating: heardBefore ? null : rating,
       updated_at: new Date().toISOString()
-    }, { onConflict: "user_id,song_id" });
-    if (error) { console.error(error); return showStatus("Could not save your response.", "error"); }
+    };
+
+    let result;
+
+    if (existing) {
+      result = await supabase
+        .from("ratings")
+        .update(payload)
+        .eq("user_id", currentUser.id)
+        .eq("song_id", songId);
+    } else {
+      result = await supabase
+        .from("ratings")
+        .insert({
+          ...payload,
+          user_id: currentUser.id,
+          song_id: songId
+        });
+    }
+
+    if (result.error) {
+      console.error(result.error);
+      showStatus("Could not save your response.", "error");
+      return;
+    }
+
     showStatus("Your response was saved.");
     await loadAll();
   });
 }
 
 function openRating(songId) {
-  document.querySelector(`[data-song-id="${songId}"]`)?.scrollIntoView({ behavior:"smooth", block:"start" });
+  document
+    .querySelector(`[data-song-id="${songId}"]`)
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function setAudience(type, shouldScroll = true) {
+function setAudience(type, scroll = true) {
   audience = type;
   document.body.dataset.audience = type;
   localStorage.setItem("japanHiddenGemsAudience", type);
+
   $("#japanListener")?.classList.toggle("is-selected", type === "japan");
   $("#overseasListener")?.classList.toggle("is-selected", type === "overseas");
   $("#changeAudienceBtn")?.classList.remove("hidden");
-  if (shouldScroll) (type === "japan" ? $("#ranking") : $("#ratingSections"))?.scrollIntoView({ behavior:"smooth", block:"start" });
+
+  if (scroll) {
+    (type === "japan" ? $("#ranking") : $("#ratingSections"))
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 function resetAudience() {
@@ -244,16 +446,18 @@ function resetAudience() {
   $("#japanListener")?.classList.remove("is-selected");
   $("#overseasListener")?.classList.remove("is-selected");
   $("#changeAudienceBtn")?.classList.add("hidden");
-  $("#audienceGate")?.scrollIntoView({ behavior:"smooth", block:"start" });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function wireUi() {
   $("#japanListener")?.addEventListener("click", () => setAudience("japan"));
   $("#overseasListener")?.addEventListener("click", () => setAudience("overseas"));
   $("#changeAudienceBtn")?.addEventListener("click", resetAudience);
+
   const dialog = $("#aboutDialog");
   $("#aboutBtn")?.addEventListener("click", () => dialog?.showModal());
   $("#closeDialog")?.addEventListener("click", () => dialog?.close());
+
   sortSelect?.addEventListener("change", render);
 }
 
@@ -263,21 +467,28 @@ window.openRating = openRating;
 
 async function start() {
   wireUi();
-  const saved = localStorage.getItem("japanHiddenGemsAudience");
-  if (saved === "japan" || saved === "overseas") setAudience(saved, false);
+
+  const savedAudience = localStorage.getItem("japanHiddenGemsAudience");
+  if (savedAudience === "japan" || savedAudience === "overseas") {
+    setAudience(savedAudience, false);
+  }
+
   try {
     await ensureAnonymousUser();
     await loadAll();
   } catch (error) {
     console.error(error);
-    cards.innerHTML = '<p class="loading">Could not load the site.</p>';
-    showStatus(String(error?.message || "").toLowerCase().includes("anonymous") ? "Enable Anonymous Sign-ins in Supabase Authentication." : "Could not connect to the database.", "error");
+    cards.innerHTML = '<p class="muted">Could not load the site.</p>';
+    showStatus(
+      String(error?.message || "").toLowerCase().includes("anonymous")
+        ? "Anonymous sign-in is not enabled in Supabase."
+        : "Could not connect to Supabase.",
+      "error"
+    );
   }
 }
 
 start();
-      
-
 
 
           
