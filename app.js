@@ -65,7 +65,28 @@ function render() {
       
     </article>
   `).join("");
-}
+  const ratingSections = document.querySelector("#ratingSections");
+
+ratingSections.innerHTML = songs.map((s) => `
+  <section class="section" data-song-id="${s.id}">
+    <p class="eyebrow dark">RATE ${s.title}</p>
+
+    <h2>Have you heard this song before?</h2>
+
+    <button onclick="submitRating(${s.id}, true, 0)">
+      Yes, I knew it
+    </button>
+
+    <h2>If not, how would you rate it?</h2>
+
+    <button onclick="submitRating(${s.id}, false, 1)">1</button>
+    <button onclick="submitRating(${s.id}, false, 2)">2</button>
+    <button onclick="submitRating(${s.id}, false, 3)">3</button>
+    <button onclick="submitRating(${s.id}, false, 4)">4</button>
+    <button onclick="submitRating(${s.id}, false, 5)">5</button>
+  </section>
+`).join("");
+  }
 document.querySelector("#songCount").textContent = songs.length;
 render();
 async function submitRating(songId, heardBefore, rating) {
