@@ -411,7 +411,68 @@ aboutBtn?.addEventListener("click", () => {
 closeDialog?.addEventListener("click", () => {
   aboutDialog?.close();
 });
+const japanListener =
+  document.querySelector("#japanListener");
 
+const overseasListener =
+  document.querySelector("#overseasListener");
+
+function setAudience(type) {
+  document.body.dataset.audience = type;
+
+  localStorage.setItem(
+    "japanHiddenGemsAudience",
+    type
+  );
+
+  japanListener?.classList.toggle(
+    "is-selected",
+    type === "japan"
+  );
+
+  overseasListener?.classList.toggle(
+    "is-selected",
+    type === "overseas"
+  );
+
+  if (type === "japan") {
+    document
+      .querySelector("#ranking")
+      ?.scrollIntoView({
+        behavior: "smooth"
+      });
+  }
+
+  if (type === "overseas") {
+    document
+      .querySelector("#ratingSections")
+      ?.scrollIntoView({
+        behavior: "smooth"
+      });
+  }
+}
+
+japanListener?.addEventListener(
+  "click",
+  () => setAudience("japan")
+);
+
+overseasListener?.addEventListener(
+  "click",
+  () => setAudience("overseas")
+);
+
+const savedAudience =
+  localStorage.getItem(
+    "japanHiddenGemsAudience"
+  );
+
+if (
+  savedAudience === "japan" ||
+  savedAudience === "overseas"
+) {
+  setAudience(savedAudience);
+}
 loadSongs();
 
   
