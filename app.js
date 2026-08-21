@@ -35,7 +35,36 @@ if (!ratingsResponse.ok) {
 }
 
 const ratings = await ratingsResponse.json();
-  
+  songs = songs.map((song) => {
+  const songRatings = ratings.filter((r) => r.song_id === song.id);
+
+  const knownCount = songRatings.filter(
+    (r) => r.heard_before === true
+  ).length;
+
+  const totalCount = songRatings.length;
+
+  const rated = songRatings.filter(
+    (r) => r.heard_before === false && r.rating > 0
+  );
+
+  const averageRating =
+    rated.length > 0
+      ? rated.reduce((sum, r) => sum + r.rating, 0) / rated.length
+      : null;
+
+  return {
+    ...song,
+    awareness:
+      totalCount > 0
+        ? Math.round((knownCount / totalCount) * 100)
+        : null,
+    overseas:
+      averageRating !== null
+        ? Number(averageRating.toFixed(1))
+        : null
+  };
+});
 
   render();
 }
