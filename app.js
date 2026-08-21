@@ -1205,74 +1205,129 @@ function youtubeVideoId(url) {
   }
 }
 
-async function submitSongRequest(event) {
+async function searchSongByTitle(event) {
   event.preventDefault();
 
   if (listenerProfile?.listener_group !== "japan") {
-    showStatus("Only listeners with a Japan profile can add songs.", "error");
+    showStatus("Only listeners with a Japan profile can search for songs.", "error");
     return;
   }
 
-  const input = $("#songRequestUrl");
-  const button = $("#songRequestSubmit");
+  const input = $("#songSearchTitle");
+  const button = $("#songSearchSubmit");
   const note = $("#songRequestNote");
-  const videoId = youtubeVideoId(input.value.trim());
+  const results = $("#youtubeCandidates");
+  const query = input.value.trim();
 
-  if (!videoId) {
-    note.textContent = "Enter a valid YouTube video URL.";
+  if (query.length < 2 || query.length > 100) {
+    note.textContent = "Enter a song title between 2 and 100 characters.";
     return;
   }
 
-  await withBusy(async () => {
-    try {
-      button.disabled = true;
-      button.textContent = "Checking YouTube…";
-      note.textContent = "";
+  button.disabled = true;
+  button.textContent = "Searching YouTube…";
+  note.textContent = "";
+  results.innerHTML = "";
 
-      const canonicalUrl = "https://www.youtube.com/watch?v=" + videoId;
-      const metadataResponse = await fetch(
-        "https://www.youtube.com/oembed?format=json&url=" +
-          encodeURIComponent(canonicalUrl)
-      );
-
-      if (!metadataResponse.ok) {
-        throw new Error("YouTube could not find a public, embeddable video.");
+  try {
+    const response = await fetch(
+      SUPABASE_URL + "/functions/v1/search-youtube?q=" +
+        encodeURIComponent(query),
+      {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + accessToken
+        }
       }
+    );
 
-      const metadata = await metadataResponse.json();
-      const title = String(metadata.title || "").trim();
-      const artist = String(metadata.author_name || "").trim();
+    const data = await response.json();
 
-      if (!title || !artist) {
-        throw new Error("The title or channel name could not be read.");
-      }
-
-      button.textContent = "Adding song…";
-
-      await rest("rpc/request_song", {
-        method: "POST",
-        authenticated: true,
-        body: JSON.stringify({
-          p_title: title,
-          p_artist: artist,
-          p_youtube_url: canonicalUrl,
-          p_video_id: videoId
-        })
-      });
-
-      input.value = "";
-      note.textContent = "";
-      showStatus("The song was added to the ranking.");
-      await loadAll();
-      $("#ranking")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch (requestError) {
-      console.error(requestError);
-      note.textContent = requestError.message;
-    } finally {
-      button.disabled = false;
-      button.textContent = "Add to ranking";
+    if (!response.ok) {
+      throw new Error(data.error || "YouTube search failed.");
     }
+
+    const candidates = Array.isArray(data.items) ? data.items : [];
+
+    if (!candidates.length) {
+      throw new Error("No embeddable YouTube videos were found.");
+    }
+
+    renderYoutubeCandidates(candidates);
+  } catch (searchError) {
+    console.error(searchError);
+    note.textContent = searchError.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = "Search";
+  }
+}
+
+function renderYoutubeCandidates(candidates) {
+  const results = $("#youtubeCandidates");
+
+  results.innerHTML = candidates
+    .map((item) => {
+      const id = escapeHtml(item.videoId);
+      const title = escapeHtml(item.title);
+      const channel = escapeHtml(item.channelTitle);
+      const thumbnail = escapeHtml(item.thumbnail);
+
+      return '<article class="youtube-candidate">' +
+        '<img src="' + thumbnail + '" alt="" loading="lazy">' +
+        '<div class="youtube-candidate-copy">' +
+          '<h3>' + title + '</h3>' +
+          '<p>' + channel + '</p>' +
+          '<button class="button candidate-add" type="button" ' +
+            'data-video-id="' + id + '" ' +
+            'data-title="' + title + '" ' +
+            'data-channel="' + channel + '">' +
+            'Choose this video' +
+          '</button>' +
+        '</div>' +
+      '</article>';
+    })
+    .join("");
+
+  results.querySelectorAll(".candidate-add").forEach((button) => {
+    button.addEventListener("click", () => addYoutubeCandidate(button));
   });
+}
+
+async function addYoutubeCandidate(button) {
+  const videoId = button.dataset.videoId;
+  const title = button.dataset.title;
+  const artist = button.dataset.channel;
+  const canonicalUrl = "https://www.youtube.com/watch?v=" + videoId;
+  const note = $("#songRequestNote");
+
+  button.disabled = true;
+  button.textContent = "Adding…";
+  note.textContent = "";
+
+  try {
+    await rest("rpc/request_song", {
+      method: "POST",
+      authenticated: true,
+      body: JSON.stringify({
+        p_title: title,
+        p_artist: artist,
+        p_youtube_url: canonicalUrl,
+        p_video_id: videoId
+      })
+    });
+
+    $("#songSearchTitle").value = "";
+    $("#youtubeCandidates").innerHTML = "";
+    showStatus("The song was added to the ranking.");
+    await loadAll();
+    $("#ranking")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (addError) {
+    console.error(addError);
+    note.textContent = addError.message;
+    button.disabled = false;
+    button.textContent = "Choose this video";
+  }
 }
 
 /* =========================
@@ -1686,7 +1741,7 @@ function wireUi() {
   $("#songRequestForm")
     ?.addEventListener(
       "submit",
-      submitSongRequest
+      searchSongByTitle
     );
 
   $("#profileForm")
