@@ -37,8 +37,39 @@ if (!ratingsResponse.ok) {
 }
 
 const ratings = await ratingsResponse.json();
+  const recommendationsResponse = await fetch(
+  `${SUPABASE_URL}/rest/v1/recommendations?select=song_id,recommended`,
+  {
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`
+    }
+  }
+);
+
+if (!recommendationsResponse.ok) {
+  const errorText = await recommendationsResponse.text();
+  alert(
+    "Recommendations error: " +
+    recommendationsResponse.status +
+    " " +
+    errorText
+  );
+  return;
+}
+
+const recommendations = await recommendationsResponse.json();
   songs = songs.map((song) => {
   const songRatings = ratings.filter((r) => r.song_id === song.id);
+    const songRecommendations = recommendations.filter(
+  (r) => r.song_id === song.id
+);
+
+const recommendationCount = songRecommendations.filter(
+  (r) => r.recommended === true
+).length;
+
+const recommendationTotal = songRecommendations.length;
 
   const knownCount = songRatings.filter(
     (r) => r.heard_before === true
@@ -57,6 +88,7 @@ const ratings = await ratingsResponse.json();
 
   return {
     ...song,
+    
     awareness:
       totalCount > 0
         ? Math.round((knownCount / totalCount) * 100)
@@ -88,7 +120,7 @@ function render() {
         <div class="meters">
           <p>
             Japan recommendation:
-            <strong>Collecting data</strong>
+            <strong>${s.japan !== null ? s.japan + "%" : "Collecting data"}</strong>
           </p>
 
           <p>
