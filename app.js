@@ -49,5 +49,5 @@ function render() {
     </article>
   `).join("");
 }
-
+document.querySelector("#songCount").textContent = songs.length;
 render();
