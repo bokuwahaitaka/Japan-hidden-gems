@@ -30,8 +30,9 @@ async function loadSongs() {
 );
 
 if (!ratingsResponse.ok) {
-  console.error("Failed to load ratings");
-  
+  const errorText = await ratingsResponse.text();
+  alert("Ratings error: " + ratingsResponse.status + " " + errorText);
+  return;
 }
 
 const ratings = await ratingsResponse.json();
