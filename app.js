@@ -117,7 +117,7 @@ function render() {
       <div>
         <h3>${s.title}</h3>
         <div class="meta">
-          ${s.englishTitle} · ${s.artist} · ${s.year}
+         ${s.artist} · ${s.year}
         </div>
 
         <div class="meters">
