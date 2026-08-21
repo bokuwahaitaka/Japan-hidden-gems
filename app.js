@@ -230,13 +230,27 @@ async function rest(path, options = {}) {
 async function loadAll() {
   if (!currentUser?.id)
     throw new Error("No anonymous user session.");
+const [songRows, ratingRows, recommendationRows] =
+  await Promise.all([
+    rest(
+      "songs?select=id,title,artist,year,youtube_url&order=id.asc"
+    ),
 
-  const [songRows, ratingRows, recommendationRows] =
-    await Promise.all([
-      rest("songs?select=id,title,artist,year,youtube_url&order=id.asc"),
-      rest("ratings?select=song_id,user_id,heard_before,rating"),
-      rest("recommendations?select=song_id,user_id,recommended")
-    ]);
+    rest(
+      "ratings?select=song_id,user_id,heard_before,rating",
+      {
+        authenticated: true
+      }
+    ),
+
+    rest(
+      "recommendations?select=song_id,user_id,recommended",
+      {
+        authenticated: true
+      }
+    )
+  ]);
+  
 
   ratings = ratingRows ?? [];
   recommendations = recommendationRows ?? [];
