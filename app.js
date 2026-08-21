@@ -133,8 +133,9 @@ ratingSections.innerHTML = songs.map((s) => `
     <button onclick="submitRating(${s.id}, false, 5)">5</button>
   </section>
 `).join("");
+  document.querySelector("#songCount").textContent = songs.length;
   }
-document.querySelector("#songCount").textContent = songs.length;
+
 loadSongs();
 async function submitRating(songId, heardBefore, rating) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
