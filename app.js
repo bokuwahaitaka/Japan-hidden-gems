@@ -14,9 +14,10 @@ async function loadSongs() {
   );
 
   if (!response.ok) {
-    console.error("Failed to load songs");
-    return;
-  }
+  const errorText = await response.text();
+  alert("Songs error: " + response.status + " " + errorText);
+  return;
+}
 
   songs = await response.json();
   const ratingsResponse = await fetch(
