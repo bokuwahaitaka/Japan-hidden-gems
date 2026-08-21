@@ -10,6 +10,16 @@ const songs = [
     japan: null,
     awareness: null,
     overseas: null
+  },
+  {
+    id: 2,
+    title: "Lady Mary",
+    englishTitle: "Lady Mary",
+    artist: "家入レオ",
+    year: 2012,
+    japan: null,
+    awareness: null,
+    overseas: null
   }
 ];
 
