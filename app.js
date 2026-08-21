@@ -2,6 +2,7 @@ const SUPABASE_URL = "https://erfidvsxhhxogthyikgr.supabase.co";
 const SUPABASE_KEY = "sb_publishable_ZFx5EEhesI7GfwX9eWyYpQ_4NKrb2Ge";
 const songs = [
   {
+    id: 1,
     title: "不協和音",
     englishTitle: "Fukyouwaon",
     artist: "欅坂46",
@@ -64,7 +65,7 @@ async function submitRating(heardBefore, rating) {
     body: JSON.stringify({
   heard_before: heardBefore,
   rating: rating,
-  song_id: 1
+  song_id: songs[0].id
 })
   });
 
