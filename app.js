@@ -86,7 +86,13 @@ const recommendationTotal = songRecommendations.length;
       ? rated.reduce((sum, r) => sum + r.rating, 0) / rated.length
       : null;
 
-  
+  return {
+  ...song,
+  japan:
+    recommendationTotal > 0
+      ? Math.round((recommendationCount / recommendationTotal) * 100)
+      : null,
+  awareness:
       totalCount > 0
         ? Math.round((knownCount / totalCount) * 100)
         : null,
