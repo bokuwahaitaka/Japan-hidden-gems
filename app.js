@@ -54,11 +54,15 @@ function render() {
           </p>
         </div>
       </div>
+<div class="score">
+  <strong>Pending</strong>
+  <span>Hidden Gem Score</span>
 
-      <div class="score">
-        <strong>Pending</strong>
-        <span>Hidden Gem Score</span>
-      </div>
+  <button onclick="openRating(${s.id})">
+    Listen & Rate
+  </button>
+</div>
+      
     </article>
   `).join("");
 }
@@ -83,5 +87,11 @@ async function submitRating(songId, heardBefore, rating) {
     alert("Rating submitted!");
   } else {
     alert("Failed to submit rating.");
+  }
+}
+function openRating(songId) {
+  const section = document.querySelector(`[data-song-id="${songId}"]`);
+  if (section) {
+    section.scrollIntoView({ behavior: "smooth" });
   }
 }
