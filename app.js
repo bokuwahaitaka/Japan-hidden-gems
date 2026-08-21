@@ -56,6 +56,74 @@ function showStatus(
   }
 }
 
+
+function ui(en, ja) {
+  return audience === "japan" ? ja : en;
+}
+
+function setText(selector, value) {
+  const element = $(selector);
+  if (element) element.textContent = value;
+}
+
+function applyInterfaceLanguage(type = audience) {
+  const ja = type === "japan";
+  document.documentElement.lang = ja ? "ja" : "en";
+
+  const copy = {
+    "#aboutBtn": ["How it works", "仕組み"],
+    "#heroEyebrow": ["CROSS-CULTURAL MUSIC DISCOVERY", "日本の隠れた名曲を世界へ"],
+    "#heroTitle": ["Japanese songs the world hasn’t found yet.", "まだ世界に知られていない日本の名曲を届けよう。"],
+    "#heroLead": [
+      "Japanese listeners recommend songs. Overseas listeners tell us whether they already knew them, then rate them after listening.",
+      "海外の人に聴いてほしい日本の曲を推薦してください。海外リスナーの認知度と視聴後評価から、隠れた名曲を発見します。"
+    ],
+    "#audienceEyebrow": ["CHOOSE YOUR ROLE", "利用方法を選択"],
+    "#audienceTitle": ["How are you listening?", "どちらとして参加しますか？"],
+    "#japanRoleTitle": ["I’m listening from Japan", "日本から参加する"],
+    "#japanRoleCopy": [
+      "Recommend songs you think deserve more attention overseas.",
+      "海外の人にもっと聴いてほしい曲を推薦します。"
+    ],
+    "#overseasRoleTitle": ["I’m listening from outside Japan", "日本国外から参加する"],
+    "#overseasRoleCopy": [
+      "Tell us if you knew a song, then rate it after listening.",
+      "曲を以前から知っていたか、聴いた後にどう感じたかを評価します。"
+    ],
+    "#changeAudienceBtn": ["Change audience", "参加方法を変更"],
+    "#songCountLabel": ["songs", "曲"],
+    "#japanVoteLabel": ["Japan votes", "日本からの投票"],
+    "#overseasResponseLabel": ["overseas responses", "海外からの回答"],
+    "#rankingEyebrow": ["DISCOVERY GAP RANKING", "海外との認知ギャップランキング"],
+    "#rankingTitle": ["Hidden Gem Index", "隠れた名曲ランキング"],
+    "#rankingCopy": [
+      "Hidden Gem Score = Japan Recommendation × (Overseas Rating ÷ 5) × (1 − Overseas Awareness).",
+      "隠れた名曲スコア ＝ 日本での推薦率 ×（海外での評価 ÷ 5）×（1 − 海外での認知度）"
+    ],
+    "#requestEyebrow": ["ADD A HIDDEN GEM", "曲を推薦"],
+    "#requestTitle": ["Recommend a song to the world.", "海外の人に聴いてほしい曲を推薦しよう。"],
+    "#requestCopy": [
+      "Enter a song title, choose the correct video from three YouTube results, and add it to the ranking immediately.",
+      "曲名を入力し、YouTubeの候補3件から正しい動画を選んでください。選んだ曲はすぐランキングに追加されます。"
+    ],
+    "#songSearchLabel": ["Song title", "曲名"],
+    "#songSearchSubmit": ["Search", "YouTubeで検索"],
+    "#requestLimitCopy": [
+      "Japan-profile listeners can add up to five songs in 24 hours. Check the title and channel before choosing a video.",
+      "24時間に5曲まで追加できます。選択前に動画名とチャンネルを確認してください。"
+    ]
+  };
+
+  Object.entries(copy).forEach(([selector, values]) => {
+    setText(selector, ja ? values[1] : values[0]);
+  });
+
+  const searchInput = $("#songSearchTitle");
+  if (searchInput) searchInput.placeholder = ja ? "例：プラスティック・ラブ" : "e.g. Plastic Love";
+
+  if (songs.length) render();
+}
+
 function youtubeEmbedUrl(url) {
   if (!url) return null;
 
@@ -404,6 +472,8 @@ async function loadListenerProfile() {
 }
 
 function renderProfileForm(group) {
+  applyInterfaceLanguage(group);
+
   const dialog = $("#profileDialog");
   const country = $("#profileCountry");
   const ageBand = $("#profileAgeBand");
@@ -412,7 +482,7 @@ function renderProfileForm(group) {
   $("#profileGroup").value = group;
   $("#profileTitle").textContent =
     group === "japan"
-      ? "Tell us about your listening"
+      ? "日本のリスナー情報"
       : "Tell us where you’re listening from";
 
   country.value =
@@ -739,7 +809,7 @@ function metric(
   suffix = ""
 ) {
   return value === null
-    ? "Collecting data"
+    ? ui("Collecting data", "データ収集中")
     : `${
         Number(
           value.toFixed(1)
@@ -862,7 +932,7 @@ function render() {
 
           const scoreText =
             song.score === null
-              ? "Pending"
+              ? ui("Pending", "集計待ち")
               : song.score;
 
           const scoreSuffix =
@@ -902,7 +972,7 @@ function render() {
                 <div class="metrics">
 
                   <p>
-                    Japan recommendation:
+                    ${ui("Japan recommendation:", "日本での推薦率：")}
                     <strong>
                       ${
                         metric(
@@ -914,7 +984,7 @@ function render() {
                   </p>
 
                   <p>
-                    Overseas awareness:
+                    ${ui("Overseas awareness:", "海外での認知度：")}
                     <strong>
                       ${
                         metric(
@@ -926,7 +996,7 @@ function render() {
                   </p>
 
                   <p>
-                    Overseas post-listening rating:
+                    ${ui("Overseas post-listening rating:", "海外での視聴後評価：")}
                     <strong>
                       ${
                         metric(
@@ -946,7 +1016,7 @@ function render() {
                   </strong>
 
                   <span>
-                    Hidden Gem Score
+                    ${ui("Hidden Gem Score", "隠れた名曲スコア")}
                     ${scoreSuffix}
                   </span>
 
@@ -955,7 +1025,7 @@ function render() {
                     song.provisional
                       ? `
                         <span class="badge">
-                          Provisional
+                          ${ui("Provisional", "暫定")}
                         </span>
                       `
                       : ""
@@ -967,17 +1037,17 @@ function render() {
                   ${
                     song.recommendationTotal
                   }
-                  Japan votes
+                  ${ui("Japan votes", "件の日本投票")}
                   ·
                   ${
                     song.overseasTotal
                   }
-                  overseas responses
+                  ${ui("overseas responses", "件の海外回答")}
                   ·
                   ${
                     song.postListenRatingCount
                   }
-                  post-listening ratings
+                  ${ui("post-listening ratings", "件の視聴後評価")}
                 </p>
 
                 <div class="actions">
@@ -999,8 +1069,8 @@ function render() {
                   >
                     ${
                       recommended === true
-                        ? "Recommended ✓"
-                        : "Recommend"
+                        ? ui("Recommended ✓", "推薦済み ✓")
+                        : ui("Recommend", "推薦する")
                     }
                   </button>
 
@@ -1014,8 +1084,8 @@ function render() {
                   >
                     ${
                       recommended === false
-                        ? "Not for me ✓"
-                        : "Not for me"
+                        ? ui("Not for me ✓", "推薦しない ✓")
+                        : ui("Not for me", "推薦しない")
                     }
                   </button>
 
@@ -1220,12 +1290,12 @@ async function searchSongByTitle(event) {
   const query = input.value.trim();
 
   if (query.length < 2 || query.length > 100) {
-    note.textContent = "Enter a song title between 2 and 100 characters.";
+    note.textContent = "曲名は2〜100文字で入力してください。";
     return;
   }
 
   button.disabled = true;
-  button.textContent = "Searching YouTube…";
+  button.textContent = "YouTubeを検索中…";
   note.textContent = "";
   results.innerHTML = "";
 
@@ -1259,7 +1329,7 @@ async function searchSongByTitle(event) {
     note.textContent = searchError.message;
   } finally {
     button.disabled = false;
-    button.textContent = "Search";
+    button.textContent = "YouTubeで検索";
   }
 }
 
@@ -1274,7 +1344,10 @@ function renderYoutubeCandidates(candidates) {
       const thumbnail = escapeHtml(item.thumbnail);
 
       return '<article class="youtube-candidate">' +
-        '<img src="' + thumbnail + '" alt="" loading="lazy">' +
+        '<div class="candidate-preview"><iframe src="https://www.youtube.com/embed/' + id + '" ' +
+          'title="' + title + '" loading="lazy" ' +
+          'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" ' +
+          'allowfullscreen></iframe></div>' +
         '<div class="youtube-candidate-copy">' +
           '<h3>' + title + '</h3>' +
           '<p>' + channel + '</p>' +
@@ -1282,7 +1355,7 @@ function renderYoutubeCandidates(candidates) {
             'data-video-id="' + id + '" ' +
             'data-title="' + title + '" ' +
             'data-channel="' + channel + '">' +
-            'Choose this video' +
+            'この動画を選ぶ' +
           '</button>' +
         '</div>' +
       '</article>';
@@ -1302,7 +1375,7 @@ async function addYoutubeCandidate(button) {
   const note = $("#songRequestNote");
 
   button.disabled = true;
-  button.textContent = "Adding…";
+  button.textContent = "追加中…";
   note.textContent = "";
 
   try {
@@ -1319,14 +1392,14 @@ async function addYoutubeCandidate(button) {
 
     $("#songSearchTitle").value = "";
     $("#youtubeCandidates").innerHTML = "";
-    showStatus("The song was added to the ranking.");
+    showStatus("曲をランキングに追加しました。");
     await loadAll();
     $("#ranking")?.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (addError) {
     console.error(addError);
     note.textContent = addError.message;
     button.disabled = false;
-    button.textContent = "Choose this video";
+    button.textContent = "この動画を選ぶ";
   }
 }
 
@@ -1632,6 +1705,8 @@ function setAudience(
 
   document.body.dataset.audience =
     type;
+
+  applyInterfaceLanguage(type);
 
   $("#japanListener")
     ?.classList.toggle(
