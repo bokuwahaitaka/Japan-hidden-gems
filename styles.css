@@ -161,3 +161,15 @@ body[data-audience="overseas"] .japan-action{display:none}
 .form-error{min-height:1.4em;margin:0;color:var(--danger);font-weight:700}
 .profile-submit{background:var(--accent);color:#fff;justify-self:start}
 @media (max-width:620px){.genre-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+body:not([data-audience="japan"]) .japan-only{display:none!important}
+.song-request-form{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;
+  margin-top:24px
+}
+.song-url-input{text-transform:none}
+.song-request-form .button{min-height:46px}
+@media (max-width:620px){
+  .song-request-form{grid-template-columns:1fr}
+  .song-request-form .button{width:100%}
+}
