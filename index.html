@@ -53,46 +53,7 @@
       <div id="cards" class="cards"></div>
     </section>
 
-    <section id="vote" class="section panel">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow dark">BLIND-LISTENING PROTOTYPE</p>
-          <h2>Rate what you hear.</h2>
-        </div>
-      </div>
-
-      <div class="vote-grid">
-        <div>
-          <p class="muted">In a production version, the song title, artist, artwork and popularity would be hidden until after rating.</p>
-        <div class="blind-card">
-  <span class="blind-label">TRACK #001</span>
-  <iframe
-    width="100%"
-    height="315"
-    src="https://www.youtube.com/embed/gfzuzDrVRVM"
-    title="Track 001"
-    frameborder="0"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-    allowfullscreen>
-  </iframe>
-</div>
-        </div>
-        <form id="ratingForm" class="rating-form">
-          <label>Had you heard this song before?
-            <select id="heard">
-              <option value="no">No</option>
-              <option value="yes">Yes</option>
-            </select>
-          </label>
-          <label>How much do you like it?
-            <input id="rating" type="range" min="1" max="5" step="1" value="4" />
-            <span id="ratingValue">4 / 5</span>
-          </label>
-          <button class="primary button" type="submit">Submit rating</button>
-          <p id="thanks" class="thanks" hidden>Thanks — this prototype stores no personal data.</p>
-        </form>
-      </div>
-    </section>
+    <section id="ratingSections"></section>
 
     <section class="section methodology">
       <p class="eyebrow dark">METHOD</p>
@@ -131,7 +92,7 @@
     <div class="brand">JAPAN HIDDEN GEMS</div>
     <p>Prototype — no copyrighted audio or artwork is hosted here.</p>
   </footer>
-<section id="ratingSections"></section>
+
   <script src="app.js"></script>
 </body>
 </html>
