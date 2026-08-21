@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Japan Hidden Gems</title>
   <meta name="description" content="Discover Japanese songs loved in Japan but still under-discovered overseas." />
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
   <header class="site-header">
@@ -88,30 +88,32 @@
       <p class="eyebrow dark">ADD A HIDDEN GEM</p>
       <h2>Recommend a song to the world.</h2>
       <p class="section-copy">
-        Paste a public YouTube link. We will read its title and channel,
-        prevent duplicates, and add it to the ranking immediately.
+        Enter a song title, choose the correct video from three YouTube results,
+        and add it to the ranking immediately.
       </p>
       <form id="songRequestForm" class="song-request-form">
-        <label class="form-field" for="songRequestUrl">
-          <span>YouTube URL</span>
+        <label class="form-field" for="songSearchTitle">
+          <span>Song title</span>
           <input
-            id="songRequestUrl"
+            id="songSearchTitle"
             class="text-input song-url-input"
-            type="url"
-            inputmode="url"
-            autocomplete="url"
-            placeholder="https://www.youtube.com/watch?v=..."
+            type="search"
+            minlength="2"
+            maxlength="100"
+            autocomplete="off"
+            placeholder="e.g. Plastic Love"
             required
           />
         </label>
-        <button id="songRequestSubmit" class="button profile-submit" type="submit">
-          Add to ranking
+        <button id="songSearchSubmit" class="button profile-submit" type="submit">
+          Search
         </button>
       </form>
       <p id="songRequestNote" class="form-error" aria-live="polite"></p>
+      <div id="youtubeCandidates" class="youtube-candidates"></div>
       <p class="sample-note">
         Japan-profile listeners can add up to five songs in 24 hours.
-        Only public YouTube videos can be added.
+        Check the title and channel before choosing a video.
       </p>
     </section>
 
@@ -189,6 +191,6 @@
     </div>
   </footer>
 
-<script type="module" src="app.js?v=7"></script>
+<script type="module" src="app.js?v=8"></script>
 </body>
 </html>
