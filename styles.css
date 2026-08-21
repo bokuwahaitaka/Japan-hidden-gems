@@ -173,3 +173,15 @@ body:not([data-audience="japan"]) .japan-only{display:none!important}
   .song-request-form{grid-template-columns:1fr}
   .song-request-form .button{width:100%}
 }
+
+.youtube-candidates{display:grid;gap:14px;margin-top:22px}
+.youtube-candidate{
+  display:grid;grid-template-columns:minmax(150px,240px) 1fr;gap:18px;
+  padding:16px;background:var(--paper);border:1px solid var(--line);border-radius:18px
+}
+.youtube-candidate img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:#111}
+.youtube-candidate-copy{display:flex;flex-direction:column;align-items:flex-start}
+.youtube-candidate-copy h3{margin:0 0 6px;line-height:1.35}
+.youtube-candidate-copy p{margin:0 0 16px;color:var(--muted)}
+.candidate-add{margin-top:auto;background:var(--accent);color:#fff}
+@media (max-width:620px){.youtube-candidate{grid-template-columns:1fr}}
