@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Japan Hidden Gems</title>
+  <meta name="description" content="Discover Japanese songs loved in Japan but still under-discovered overseas." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav">
+      <div class="brand">JAPAN HIDDEN GEMS</div>
+      <button id="aboutBtn" class="ghost">How it works</button>
+    </nav>
+
+    <div class="hero-inner">
+      <p class="eyebrow">A CROSS-CULTURAL MUSIC DISCOVERY EXPERIMENT</p>
+      <h1>Japanese songs the world<br />hasn’t found yet.</h1>
+      <p class="lead">
+        We compare recommendations from Japanese listeners with overseas awareness
+        and post-listening ratings to surface overlooked songs.
+      </p>
+      <div class="hero-actions">
+        <a href="#ranking" class="primary">Explore hidden gems</a>
+        <a href="#vote" class="secondary">Rate a song</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="stats">
+      <div><strong id="songCount">6</strong><span>songs tracked</span></div>
+      <div><strong>2</strong><span>audience groups</span></div>
+      <div><strong>1</strong><span>goal: discovery</span></div>
+    </section>
+
+    <section id="ranking" class="section">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow dark">DISCOVERY GAP RANKING</p>
+          <h2>Hidden Gem Index</h2>
+        </div>
+        <select id="sortSelect" aria-label="Sort ranking">
+          <option value="score">Highest Hidden Gem Score</option>
+          <option value="japan">Highest Japan Recommendation</option>
+          <option value="overseas">Lowest Overseas Awareness</option>
+        </select>
+      </div>
+      <p class="section-copy">
+        Prototype data only. Scores below are illustrative until real surveys are collected.
+      </p>
+      <div id="cards" class="cards"></div>
+    </section>
+
+    <section id="vote" class="section panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow dark">BLIND-LISTENING PROTOTYPE</p>
+          <h2>Rate what you hear.</h2>
+        </div>
+      </div>
+
+      <div class="vote-grid">
+        <div>
+          <p class="muted">In a production version, the song title, artist, artwork and popularity would be hidden until after rating.</p>
+          <div class="blind-card">
+            <span class="blind-label">TRACK #001</span>
+            <div class="wave">▂▅▇▃▆▂▇▅▃▆▂▅▇▃▆</div>
+            <p>Audio would be embedded here through an authorized service.</p>
+          </div>
+        </div>
+        <form id="ratingForm" class="rating-form">
+          <label>Had you heard this song before?
+            <select id="heard">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </label>
+          <label>How much do you like it?
+            <input id="rating" type="range" min="1" max="5" step="1" value="4" />
+            <span id="ratingValue">4 / 5</span>
+          </label>
+          <button class="primary button" type="submit">Submit rating</button>
+          <p id="thanks" class="thanks" hidden>Thanks — this prototype stores no personal data.</p>
+        </form>
+      </div>
+    </section>
+
+    <section class="section methodology">
+      <p class="eyebrow dark">METHOD</p>
+      <h2>How the score works</h2>
+      <div class="formula">
+        Hidden Gem Score = Japan Recommendation × Overseas Rating × (1 − Overseas Awareness)
+      </div>
+      <p>
+        The purpose is not to decide which song is “objectively best.” It is to identify a discovery gap:
+        music strongly recommended in Japan, rarely known abroad, but positively received after listening.
+      </p>
+    </section>
+
+    <section class="section about">
+      <p class="eyebrow dark">WHY THIS EXISTS</p>
+      <h2>Not another popularity chart.</h2>
+      <p>
+        Popularity algorithms tend to reinforce what people already know. Japan Hidden Gems is designed to ask a different question:
+        <strong>Which Japanese songs deserve a first listen outside Japan?</strong>
+      </p>
+    </section>
+  </main>
+
+  <dialog id="aboutDialog">
+    <button id="closeDialog" class="dialog-close">×</button>
+    <p class="eyebrow dark">ABOUT THE PROJECT</p>
+    <h2>Discovery before popularity.</h2>
+    <p>
+      Japanese listeners nominate songs. Overseas listeners report whether they already knew them,
+      then rate them after listening. The gap between domestic recommendation and overseas awareness
+      helps surface overlooked music.
+    </p>
+  </dialog>
+
+  <footer>
+    <div class="brand">JAPAN HIDDEN GEMS</div>
+    <p>Prototype — no copyrighted audio or artwork is hosted here.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
