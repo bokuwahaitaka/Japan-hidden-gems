@@ -19,6 +19,23 @@ async function loadSongs() {
   }
 
   songs = await response.json();
+  const ratingsResponse = await fetch(
+  `${SUPABASE_URL}/rest/v1/ratings?select=song_id,heard_before,rating`,
+  {
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`
+    }
+  }
+);
+
+if (!ratingsResponse.ok) {
+  console.error("Failed to load ratings");
+  return;
+}
+
+const ratings = await ratingsResponse.json();
+  
 
   render();
 }
@@ -45,12 +62,12 @@ function render() {
 
           <p>
             Overseas awareness:
-            <strong>Collecting data</strong>
+<strong>${s.awareness !== null ? s.awareness + "%" : "Collecting data"}</strong>
           </p>
 
           <p>
             Overseas post-listening rating:
-            <strong>Collecting data</strong>
+<strong>${s.overseas !== null ? s.overseas + " / 5" : "Collecting data"}</strong>
           </p>
         </div>
       </div>
