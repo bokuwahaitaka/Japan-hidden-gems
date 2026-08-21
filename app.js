@@ -143,10 +143,14 @@ async function refreshSession(refreshToken) {
 async function createAnonymousSession() {
   return authRequest("signup", {
     method: "POST",
-    body: JSON.stringify({})
+    body: JSON.stringify({
+      data: {},
+      gotrue_meta_security: {
+        captcha_token: null
+      }
+    })
   });
 }
-
 async function ensureAnonymousUser() {
   let stored = readSession();
 
