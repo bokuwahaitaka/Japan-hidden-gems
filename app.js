@@ -10,6 +10,9 @@ let audience = null;
 let currentUser = null;
 let accessToken = null;
 let busy = false;
+let listenerProfile = null;
+let genreOptions = [];
+let selectedGenreIds = [];
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -355,6 +358,188 @@ async function rest(
   }
 
   return data;
+}
+
+
+/* =========================
+   LISTENER PROFILE
+========================= */
+
+const AGE_BANDS = {
+  under_18: "Under 18",
+  "18_24": "18–24",
+  "25_34": "25–34",
+  "35_44": "35–44",
+  "45_54": "45–54",
+  "55_64": "55–64",
+  "65_plus": "65+",
+  prefer_not_to_say: "Prefer not to say"
+};
+
+async function loadListenerProfile() {
+  const [profiles, preferences, genres] = await Promise.all([
+    rest(
+      "listener_profiles?select=user_id,listener_group,country_code,age_band&user_id=eq." +
+        encodeURIComponent(currentUser.id),
+      { authenticated: true }
+    ),
+    rest(
+      "listener_genre_preferences?select=genre_id&user_id=eq." +
+        encodeURIComponent(currentUser.id),
+      { authenticated: true }
+    ),
+    rest(
+      "genres?select=id,slug,label_en&is_active=eq.true&order=sort_order.asc",
+      { authenticated: true }
+    )
+  ]);
+
+  listenerProfile = profiles?.[0] ?? null;
+  selectedGenreIds = (preferences ?? []).map((row) => Number(row.genre_id));
+  genreOptions = genres ?? [];
+
+  if (listenerProfile) {
+    setAudience(listenerProfile.listener_group, false);
+  }
+}
+
+function renderProfileForm(group) {
+  const dialog = $("#profileDialog");
+  const country = $("#profileCountry");
+  const ageBand = $("#profileAgeBand");
+  const genreList = $("#profileGenres");
+
+  $("#profileGroup").value = group;
+  $("#profileTitle").textContent =
+    group === "japan"
+      ? "Tell us about your listening"
+      : "Tell us where you’re listening from";
+
+  country.value =
+    listenerProfile?.listener_group === group
+      ? listenerProfile.country_code
+      : group === "japan"
+        ? "JP"
+        : "";
+
+  country.readOnly = group === "japan";
+
+  ageBand.innerHTML =
+    '<option value="">Choose an age band</option>' +
+    Object.entries(AGE_BANDS)
+      .map(([value, label]) =>
+        '<option value="' + escapeHtml(value) + '">' +
+        escapeHtml(label) + "</option>"
+      )
+      .join("");
+
+  ageBand.value = listenerProfile?.age_band ?? "";
+
+  genreList.innerHTML = genreOptions
+    .map((genre) => {
+      const checked = selectedGenreIds.includes(Number(genre.id));
+      return '<label class="genre-option">' +
+        '<input type="checkbox" name="profileGenre" value="' +
+        Number(genre.id) + '"' + (checked ? " checked" : "") + ">" +
+        "<span>" + escapeHtml(genre.label_en) + "</span></label>";
+    })
+    .join("");
+
+  $("#profileError").textContent = "";
+  dialog.showModal();
+}
+
+function openProfileDialog(group = listenerProfile?.listener_group || "overseas") {
+  renderProfileForm(group);
+}
+
+async function saveListenerProfile(event) {
+  event.preventDefault();
+
+  const group = $("#profileGroup").value;
+  const countryCode = $("#profileCountry").value.trim().toUpperCase();
+  const ageBand = $("#profileAgeBand").value;
+  const genreIds = [...document.querySelectorAll('input[name="profileGenre"]:checked')]
+    .map((input) => Number(input.value));
+
+  const error = $("#profileError");
+
+  if (!/^[A-Z]{2}$/.test(countryCode)) {
+    error.textContent = "Enter a two-letter country code, such as JP, US, GB or KR.";
+    return;
+  }
+
+  if ((group === "japan" && countryCode !== "JP") ||
+      (group === "overseas" && countryCode === "JP")) {
+    error.textContent =
+      group === "japan"
+        ? "The Japan listener option uses country code JP."
+        : "Choose Japan as your role if your country code is JP.";
+    return;
+  }
+
+  if (!AGE_BANDS[ageBand]) {
+    error.textContent = "Choose an age band.";
+    return;
+  }
+
+  if (genreIds.length < 1 || genreIds.length > 5) {
+    error.textContent = "Choose between 1 and 5 genres.";
+    return;
+  }
+
+  await withBusy(async () => {
+    try {
+      await rest("listener_profiles?on_conflict=user_id", {
+        method: "POST",
+        authenticated: true,
+        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          listener_group: group,
+          country_code: countryCode,
+          age_band: ageBand,
+          updated_at: new Date().toISOString()
+        })
+      });
+
+      await rest(
+        "listener_genre_preferences?user_id=eq." +
+          encodeURIComponent(currentUser.id),
+        {
+          method: "DELETE",
+          authenticated: true,
+          headers: { Prefer: "return=minimal" }
+        }
+      );
+
+      await rest("listener_genre_preferences", {
+        method: "POST",
+        authenticated: true,
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify(
+          genreIds.map((genreId) => ({
+            user_id: currentUser.id,
+            genre_id: genreId
+          }))
+        )
+      });
+
+      listenerProfile = {
+        user_id: currentUser.id,
+        listener_group: group,
+        country_code: countryCode,
+        age_band: ageBand
+      };
+      selectedGenreIds = genreIds;
+      setAudience(group);
+      $("#profileDialog").close();
+      showStatus("Your anonymous profile was saved.");
+    } catch (saveError) {
+      console.error(saveError);
+      error.textContent = "Could not save your profile: " + saveError.message;
+    }
+  });
 }
 
 /* =========================
@@ -1300,11 +1485,6 @@ function setAudience(
   document.body.dataset.audience =
     type;
 
-  localStorage.setItem(
-    "japanHiddenGemsAudience",
-    type
-  );
-
   $("#japanListener")
     ?.classList.toggle(
       "is-selected",
@@ -1347,10 +1527,6 @@ function resetAudience() {
     .dataset
     .audience;
 
-  localStorage.removeItem(
-    "japanHiddenGemsAudience"
-  );
-
   $("#japanListener")
     ?.classList.remove(
       "is-selected"
@@ -1380,25 +1556,19 @@ function wireUi() {
   $("#japanListener")
     ?.addEventListener(
       "click",
-      () =>
-        setAudience(
-          "japan"
-        )
+      () => openProfileDialog("japan")
     );
 
   $("#overseasListener")
     ?.addEventListener(
       "click",
-      () =>
-        setAudience(
-          "overseas"
-        )
+      () => openProfileDialog("overseas")
     );
 
   $("#changeAudienceBtn")
     ?.addEventListener(
       "click",
-      resetAudience
+      () => openProfileDialog()
     );
 
   const dialog =
@@ -1418,6 +1588,18 @@ function wireUi() {
       () =>
         dialog
           ?.close()
+    );
+
+  $("#profileForm")
+    ?.addEventListener(
+      "submit",
+      saveListenerProfile
+    );
+
+  $("#closeProfileDialog")
+    ?.addEventListener(
+      "click",
+      () => $("#profileDialog")?.close()
     );
 
   sortSelect
@@ -1447,21 +1629,6 @@ window.openRating =
 async function start() {
   wireUi();
 
-  const savedAudience =
-    localStorage.getItem(
-      "japanHiddenGemsAudience"
-    );
-
-  if (
-    savedAudience === "japan" ||
-    savedAudience === "overseas"
-  ) {
-    setAudience(
-      savedAudience,
-      false
-    );
-  }
-
   try {
     showStatus(
       "Connecting securely…",
@@ -1470,6 +1637,8 @@ async function start() {
     );
 
     await ensureAnonymousUser();
+
+    await loadListenerProfile();
 
     await loadAll();
 
