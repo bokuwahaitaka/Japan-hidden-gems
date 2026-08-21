@@ -109,6 +109,15 @@ function render() {
   <button onclick="openRating(${s.id})">
     Listen & Rate
   </button>
+  <div>
+  <button onclick="submitRecommendation(${s.id}, true)">
+    Recommend
+  </button>
+
+  <button onclick="submitRecommendation(${s.id}, false)">
+    Not for me
+  </button>
+</div>
 </div>
       
     </article>
@@ -163,5 +172,28 @@ function openRating(songId) {
   const section = document.querySelector(`[data-song-id="${songId}"]`);
   if (section) {
     section.scrollIntoView({ behavior: "smooth" });
+  }
+}
+async function submitRecommendation(songId, recommended) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/recommendations`,
+    {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        song_id: songId,
+        recommended: recommended
+      })
+    }
+  );
+
+  if (response.ok) {
+    alert("Recommendation submitted!");
+  } else {
+    alert("Failed to submit recommendation.");
   }
 }
