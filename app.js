@@ -1,3 +1,5 @@
+const SUPABASE_URL = "https://erfidvsxhhxogthyikgr.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ZFx5EEhesI7GfwX9eWyYpQ_4NKrb2Ge";
 const songs = [
   {
     title: "不協和音",
@@ -51,3 +53,23 @@ function render() {
 }
 document.querySelector("#songCount").textContent = songs.length;
 render();
+async function submitRating(heardBefore, rating) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      heard_before: heardBefore,
+      rating: rating
+    })
+  });
+
+  if (response.ok) {
+    alert("Rating submitted!");
+  } else {
+    alert("Failed to submit rating.");
+  }
+}
