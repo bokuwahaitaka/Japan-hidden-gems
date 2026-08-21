@@ -895,17 +895,8 @@ function render() {
                 </h3>
 
                 <div class="meta">
-                  ${
-                    escapeHtml(
-                      song.artist
-                    )
-                  }
-                  ·
-                  ${
-                    escapeHtml(
-                      song.year
-                    )
-                  }
+                  ${escapeHtml(song.artist)}
+                  ${song.year ? " · " + escapeHtml(song.year) : ""}
                 </div>
 
                 <div class="metrics">
@@ -1180,6 +1171,108 @@ function renderRatingSections(
         `;
       })
       .join("");
+}
+
+
+/* =========================
+   SONG REQUESTS
+========================= */
+
+function youtubeVideoId(url) {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, "");
+    let id = null;
+
+    if (host === "youtu.be") {
+      id = parsed.pathname.split("/").filter(Boolean)[0];
+    } else if (host === "youtube.com" || host === "m.youtube.com") {
+      id = parsed.searchParams.get("v");
+
+      if (!id) {
+        const parts = parsed.pathname.split("/").filter(Boolean);
+        if (["shorts", "embed", "live"].includes(parts[0])) {
+          id = parts[1];
+        }
+      }
+    }
+
+    return /^[A-Za-z0-9_-]{11}$/.test(id || "") ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+async function submitSongRequest(event) {
+  event.preventDefault();
+
+  if (listenerProfile?.listener_group !== "japan") {
+    showStatus("Only listeners with a Japan profile can add songs.", "error");
+    return;
+  }
+
+  const input = $("#songRequestUrl");
+  const button = $("#songRequestSubmit");
+  const note = $("#songRequestNote");
+  const videoId = youtubeVideoId(input.value.trim());
+
+  if (!videoId) {
+    note.textContent = "Enter a valid YouTube video URL.";
+    return;
+  }
+
+  await withBusy(async () => {
+    try {
+      button.disabled = true;
+      button.textContent = "Checking YouTube…";
+      note.textContent = "";
+
+      const canonicalUrl = "https://www.youtube.com/watch?v=" + videoId;
+      const metadataResponse = await fetch(
+        "https://www.youtube.com/oembed?format=json&url=" +
+          encodeURIComponent(canonicalUrl)
+      );
+
+      if (!metadataResponse.ok) {
+        throw new Error("YouTube could not find a public, embeddable video.");
+      }
+
+      const metadata = await metadataResponse.json();
+      const title = String(metadata.title || "").trim();
+      const artist = String(metadata.author_name || "").trim();
+
+      if (!title || !artist) {
+        throw new Error("The title or channel name could not be read.");
+      }
+
+      button.textContent = "Adding song…";
+
+      await rest("rpc/request_song", {
+        method: "POST",
+        authenticated: true,
+        body: JSON.stringify({
+          p_title: title,
+          p_artist: artist,
+          p_youtube_url: canonicalUrl,
+          p_video_id: videoId
+        })
+      });
+
+      input.value = "";
+      note.textContent = "";
+      showStatus("The song was added to the ranking.");
+      await loadAll();
+      $("#ranking")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (requestError) {
+      console.error(requestError);
+      note.textContent = requestError.message;
+    } finally {
+      button.disabled = false;
+      button.textContent = "Add to ranking";
+    }
+  });
 }
 
 /* =========================
@@ -1588,6 +1681,12 @@ function wireUi() {
       () =>
         dialog
           ?.close()
+    );
+
+  $("#songRequestForm")
+    ?.addEventListener(
+      "submit",
+      submitSongRequest
     );
 
   $("#profileForm")
