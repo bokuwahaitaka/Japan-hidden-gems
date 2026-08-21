@@ -228,7 +228,7 @@ function render() {
 
         <div>
           <h3>${escapeHtml(song.title)}</h3>
-          <div class="meta">${escapeHtml(song.artist)} Â· ${escapeHtml(song.year)}</div>
+          <div class="meta">${escapeHtml(song.artist)} · ${escapeHtml(song.year)}</div>
 
           <div class="metrics">
             <p>Japan recommendation: <strong>${metric(song.japan, "%")}</strong></p>
@@ -243,8 +243,8 @@ function render() {
           </div>
 
           <p class="sample-note">
-            ${song.recommendationTotal} Japan vote${song.recommendationTotal === 1 ? "" : "s"} Â·
-            ${song.overseasTotal} overseas response${song.overseasTotal === 1 ? "" : "s"} Â·
+            ${song.recommendationTotal} Japan vote${song.recommendationTotal === 1 ? "" : "s"} ·
+            ${song.overseasTotal} overseas response${song.overseasTotal === 1 ? "" : "s"} ·
             ${song.postListenRatingCount} post-listening rating${song.postListenRatingCount === 1 ? "" : "s"}
           </p>
 
@@ -256,12 +256,12 @@ function render() {
 
             <button class="action japan-action ${recommended === true ? "selected" : ""}"
               onclick="window.submitRecommendation(${song.id}, true)">
-              ${recommended === true ? "Recommended â" : "Recommend"}
+              ${recommended === true ? "Recommended ✓" : "Recommend"}
             </button>
 
             <button class="action japan-action ${recommended === false ? "selected" : ""}"
               onclick="window.submitRecommendation(${song.id}, false)">
-              ${recommended === false ? "Not for me â" : "Not for me"}
+              ${recommended === false ? "Not for me ✓" : "Not for me"}
             </button>
           </div>
         </div>
@@ -288,7 +288,7 @@ function render() {
           <div class="rating-actions">
             <button class="action ${my?.heard_before === true ? "selected" : ""}"
               onclick="window.submitRating(${song.id}, true, null)">
-              ${my?.heard_before === true ? "Yes, I knew it â" : "Yes, I knew it"}
+              ${my?.heard_before === true ? "Yes, I knew it ✓" : "Yes, I knew it"}
             </button>
           </div>
 
@@ -298,7 +298,7 @@ function render() {
             ${[1,2,3,4,5].map((value) => `
               <button class="action ${my?.heard_before === false && Number(my.rating) === value ? "selected" : ""}"
                 onclick="window.submitRating(${song.id}, false, ${value})">
-                ${value}${my?.heard_before === false && Number(my.rating) === value ? " â" : ""}
+                ${value}${my?.heard_before === false && Number(my.rating) === value ? " ✓" : ""}
               </button>
             `).join("")}
           </div>
@@ -489,6 +489,3 @@ async function start() {
 }
 
 start();
-
-
-          

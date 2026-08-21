@@ -1,345 +1,121 @@
- <!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Japan Hidden Gems</title>
-
-  <meta
-    name="description"
-    content="Discover Japanese songs loved in Japan but still under-discovered overseas."
-  />
-
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <meta name="description" content="Discover Japanese songs loved in Japan but still under-discovered overseas." />
+  <link rel="stylesheet" href="styles.css?v=1" />
 </head>
-
 <body>
-
-  <!-- USER TYPE ENTRY -->
-  <section
-    id="audienceGate"
-    class="audience-gate"
-  >
-    <div class="audience-gate-inner">
-
-      <p class="eyebrow dark">
-        START HERE
-      </p>
-
-      <h2>
-        How are you listening?
-      </h2>
-
-      <p class="audience-intro">
-        Japanese and overseas listeners contribute
-        different kinds of data to the Hidden Gem Index.
-      </p>
-
-      <div class="audience-options">
-
-        <button
-          id="japanListener"
-          class="audience-option"
-          type="button"
-        >
-          <span class="audience-label">
-            I’m listening from Japan
-          </span>
-
-          <span class="audience-description">
-            Recommend Japanese songs you think
-            deserve more attention overseas.
-          </span>
-        </button>
-
-        <button
-          id="overseasListener"
-          class="audience-option"
-          type="button"
-        >
-          <span class="audience-label">
-            I’m listening from outside Japan
-          </span>
-
-          <span class="audience-description">
-            Tell us whether you already knew a song,
-            then rate it after listening.
-          </span>
-        </button>
-
-      </div>
-
+  <header class="site-header">
+    <div class="shell header-inner">
+      <div class="brand">JAPAN HIDDEN GEMS</div>
+      <button id="aboutBtn" class="button button-ghost" type="button">How it works</button>
     </div>
-  </section>
-
-
-  <!-- HERO -->
-  <header class="hero">
-
-    <nav class="nav">
-
-      <div class="brand">
-        JAPAN HIDDEN GEMS
-      </div>
-
-      <button
-        id="aboutBtn"
-        class="ghost"
-        type="button"
-      >
-        How it works
-      </button>
-
-    </nav>
-
-    <div class="hero-inner">
-
-      <p class="eyebrow">
-        A CROSS-CULTURAL MUSIC DISCOVERY EXPERIMENT
-      </p>
-
-      <h1>
-        Japanese songs the world
-        <br />
-        hasn’t found yet.
-      </h1>
-
-      <p class="lead">
-        We compare recommendations from Japanese listeners
-        with overseas awareness and post-listening ratings
-        to surface overlooked songs.
-      </p>
-
-      <div class="hero-actions">
-
-        <a
-          href="#ranking"
-          class="primary"
-        >
-          Explore hidden gems
-        </a>
-
-        <a
-          href="#ratingSections"
-          class="secondary"
-        >
-          Rate a song
-        </a>
-
-      </div>
-
-    </div>
-
   </header>
 
-
   <main>
-
-    <!-- STATS -->
-    <section class="stats">
-
-      <div>
-        <strong id="songCount">
-          0
-        </strong>
-
-        <span>
-          songs tracked
-        </span>
-      </div>
-
-      <div>
-        <strong>
-          2
-        </strong>
-
-        <span>
-          audience groups
-        </span>
-      </div>
-
-      <div>
-        <strong>
-          1
-        </strong>
-
-        <span>
-          goal: discovery
-        </span>
-      </div>
-
-    </section>
-
-
-    <!-- RANKING -->
-    <section
-      id="ranking"
-      class="section"
-    >
-
-      <div class="section-head">
-
+    <section class="hero">
+      <div class="shell hero-grid">
         <div>
-
-          <p class="eyebrow dark">
-            DISCOVERY GAP RANKING
+          <p class="eyebrow">CROSS-CULTURAL MUSIC DISCOVERY</p>
+          <h1>Japanese songs the world hasn’t found yet.</h1>
+          <p class="lead">
+            Japanese listeners recommend songs. Overseas listeners tell us whether
+            they already knew them, then rate them after listening.
           </p>
-
-          <h2>
-            Hidden Gem Index
-          </h2>
-
         </div>
 
-        <select
-          id="sortSelect"
-          aria-label="Sort ranking"
-        >
+        <div class="audience-card">
+          <p class="eyebrow dark">CHOOSE YOUR ROLE</p>
+          <h2>How are you listening?</h2>
 
-          <option value="score">
-            Highest Hidden Gem Score
-          </option>
+          <button id="japanListener" class="role-button" type="button">
+            <strong>I’m listening from Japan</strong>
+            <span>Recommend songs you think deserve more attention overseas.</span>
+          </button>
 
-          <option value="japan">
-            Highest Japan Recommendation
-          </option>
+          <button id="overseasListener" class="role-button" type="button">
+            <strong>I’m listening from outside Japan</strong>
+            <span>Tell us if you knew a song, then rate it after listening.</span>
+          </button>
 
-          <option value="overseas">
-            Lowest Overseas Awareness
-          </option>
+          <button id="changeAudienceBtn" class="text-button hidden" type="button">
+            Change audience
+          </button>
+        </div>
+      </div>
+    </section>
 
+    <section class="stats">
+      <div class="shell stats-grid">
+        <div><strong id="songCount">0</strong><span>songs</span></div>
+        <div><strong id="japanVoteCount">0</strong><span>Japan votes</span></div>
+        <div><strong id="overseasResponseCount">0</strong><span>overseas responses</span></div>
+      </div>
+    </section>
+
+    <div id="statusBar" class="status hidden" aria-live="polite"></div>
+
+    <section class="shell section" id="ranking">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow dark">DISCOVERY GAP RANKING</p>
+          <h2>Hidden Gem Index</h2>
+        </div>
+
+        <select id="sortSelect" class="select" aria-label="Sort ranking">
+          <option value="score">Highest Hidden Gem Score</option>
+          <option value="japan">Highest Japan Recommendation</option>
+          <option value="awareness">Lowest Overseas Awareness</option>
+          <option value="rating">Highest Overseas Rating</option>
         </select>
-
       </div>
 
       <p class="section-copy">
-        Scores are calculated from Japanese recommendation,
-        overseas awareness, and overseas post-listening ratings.
+        Hidden Gem Score = Japan Recommendation × (Overseas Rating ÷ 5) ×
+        (1 − Overseas Awareness).
       </p>
 
-      <div
-        id="cards"
-        class="cards"
-      ></div>
-
-    </section>
-
-
-    <!-- DYNAMIC RATING SECTIONS -->
-    <section
-      id="ratingSections"
-      class="rating-sections"
-    ></section>
-
-
-    <!-- METHODOLOGY -->
-    <section class="section methodology">
-
-      <p class="eyebrow dark">
-        METHOD
-      </p>
-
-      <h2>
-        How the score works
-      </h2>
-
-      <div class="formula">
-        Hidden Gem Score =
-        Japan Recommendation
-        × Overseas Rating
-        × (1 − Overseas Awareness)
+      <div id="cards" class="cards">
+        <p class="muted">Loading songs…</p>
       </div>
-
-      <p>
-        The purpose is not to decide which song is
-        “objectively best.”
-        It is to identify a discovery gap:
-        music strongly recommended in Japan,
-        rarely known abroad,
-        but positively received after listening.
-      </p>
-
     </section>
 
+    <section id="ratingSections" class="rating-sections"></section>
 
-    <!-- ABOUT -->
-    <section class="section about">
-
-      <p class="eyebrow dark">
-        WHY THIS EXISTS
+    <section class="shell section compact">
+      <p class="eyebrow dark">METHOD</p>
+      <h2>What makes a hidden gem?</h2>
+      <p class="section-copy">
+        A song ranks highly when Japanese listeners recommend it, overseas listeners
+        rarely knew it beforehand, and people outside Japan rate it highly after listening.
       </p>
-
-      <h2>
-        Not another popularity chart.
-      </h2>
-
-      <p>
-        Popularity algorithms tend to reinforce
-        what people already know.
-        Japan Hidden Gems asks a different question:
-        <strong>
-          Which Japanese songs deserve a first listen
-          outside Japan?
-        </strong>
+      <p class="section-copy">
+        Early results are marked provisional until enough responses are collected.
       </p>
-
     </section>
-
   </main>
 
-
-  <!-- ABOUT DIALOG -->
   <dialog id="aboutDialog">
-
-    <button
-      id="closeDialog"
-      class="dialog-close"
-      type="button"
-      aria-label="Close"
-    >
-      ×
-    </button>
-
-    <p class="eyebrow dark">
-      ABOUT THE PROJECT
-    </p>
-
-    <h2>
-      Discovery before popularity.
-    </h2>
-
+    <button id="closeDialog" class="dialog-close" type="button" aria-label="Close">×</button>
+    <p class="eyebrow dark">ABOUT</p>
+    <h2>Discovery before popularity.</h2>
     <p>
-      Japanese listeners recommend songs.
-      Overseas listeners report whether they already knew them,
-      then rate them after listening.
-      The gap between domestic recommendation
-      and overseas awareness helps surface overlooked music.
+      Each browser gets an anonymous Supabase user. That allows one Japan recommendation
+      and one overseas response per song. Choosing again updates the previous response
+      instead of adding another vote.
     </p>
-
   </dialog>
 
-
-  <!-- FOOTER -->
   <footer>
-
-    <div class="brand">
-      JAPAN HIDDEN GEMS
+    <div class="shell footer-inner">
+      <div class="brand">JAPAN HIDDEN GEMS</div>
+      <p>Prototype — no copyrighted audio or artwork is hosted here.</p>
     </div>
-
-    <p>
-      Prototype — no copyrighted audio or artwork
-      is hosted here.
-    </p>
-
   </footer>
 
-
-  <script src="app.js?v=2"></script>
-
+  <script type="module" src="app.js?v=1"></script>
 </body>
 </html>
