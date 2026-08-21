@@ -1,27 +1,27 @@
 const SUPABASE_URL = "https://erfidvsxhhxogthyikgr.supabase.co";
 const SUPABASE_KEY = "sb_publishable_ZFx5EEhesI7GfwX9eWyYpQ_4NKrb2Ge";
-const songs = [
-  {
-    id: 1,
-    title: "不協和音",
-    englishTitle: "Fukyouwaon",
-    artist: "欅坂46",
-    year: 2017,
-    japan: null,
-    awareness: null,
-    overseas: null
-  },
-  {
-    id: 2,
-    title: "Lady Mary",
-    englishTitle: "Lady Mary",
-    artist: "家入レオ",
-    year: 2012,
-    japan: null,
-    awareness: null,
-    overseas: null
+let songs = [];
+
+async function loadSongs() {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/songs?select=id,title,artist,year&order=id.asc`,
+    {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    console.error("Failed to load songs");
+    return;
   }
-];
+
+  songs = await response.json();
+
+  render();
+}
 
 const cards = document.querySelector("#cards");
 const sortSelect = document.querySelector("#sortSelect");
@@ -88,7 +88,7 @@ ratingSections.innerHTML = songs.map((s) => `
 `).join("");
   }
 document.querySelector("#songCount").textContent = songs.length;
-render();
+loadSongs();
 async function submitRating(songId, heardBefore, rating) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
     method: "POST",
