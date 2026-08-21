@@ -54,7 +54,7 @@ function render() {
 }
 document.querySelector("#songCount").textContent = songs.length;
 render();
-async function submitRating(heardBefore, rating) {
+async function submitRating(songId, heardBefore, rating) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
     method: "POST",
     headers: {
@@ -65,7 +65,7 @@ async function submitRating(heardBefore, rating) {
     body: JSON.stringify({
   heard_before: heardBefore,
   rating: rating,
-  song_id: songs[0].id
+  song_id: songId
 })
   });
 
