@@ -62,9 +62,10 @@ async function submitRating(heardBefore, rating) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      heard_before: heardBefore,
-      rating: rating
-    })
+  heard_before: heardBefore,
+  rating: rating,
+  song_id: 1
+})
   });
 
   if (response.ok) {
