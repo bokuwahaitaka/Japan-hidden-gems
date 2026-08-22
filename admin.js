@@ -101,7 +101,9 @@ function renderSongs() {
   $("#adminSongs").innerHTML = rows.map((song) => `
     <article class="song-row">
       <div class="song-copy">
-        <span class="badge ${song.is_hidden ? "hidden-badge" : ""}">${song.is_hidden ? "非表示" : "公開中"}</span>\n        ${song.is_catalog_seed ? `<span class="badge">年代カタログ</span>` : ""}\n        ${song.has_seed_metrics ? `<span class="badge">初期参考スコアあり</span>` : ""}
+        <span class="badge ${song.is_hidden ? "hidden-badge" : ""}">${song.is_hidden ? "非表示" : "公開中"}</span>
+        ${song.is_catalog_seed ? `<span class="badge">年代カタログ</span>` : ""}
+        ${song.has_seed_metrics ? `<span class="badge">初期参考スコアあり</span>` : ""}
         <h2>${escapeHtml(song.title)}</h2>
         <p>${escapeHtml(song.artist)}${song.year ? " · " + song.year : ""}</p>
         <small>推薦 ${song.recommendation_count}件 · 評価 ${song.rating_count}件 · ID ${song.id}</small>
@@ -377,7 +379,21 @@ $("#cancelDelete").addEventListener("click", () => $("#deleteDialog").close());
 $("#songFilter").addEventListener("input", renderSongs);
 $("#visibilityFilter").addEventListener("change", renderSongs);
 $("#refreshSongs").addEventListener("click", loadSongs);
-$("#backfillTags").addEventListener("click", backfillAiTags);\n$("#clearSeedMetrics").addEventListener("click", async () => {\n  if (!window.confirm("初期参考スコアをすべて削除します。曲自体と本物の回答は残ります。続行しますか？")) return;\n  const button = $("#clearSeedMetrics");\n  button.disabled = true;\n  try {\n    const deleted = await rpc("admin_clear_seed_metrics");\n    await loadSongs();\n    $("#adminStatus").textContent = deleted + "曲分の初期参考スコアを削除しました。";\n  } catch (error) {\n    $("#adminStatus").textContent = error.message;\n  } finally {\n    button.disabled = false;\n  }\n});
+$("#backfillTags").addEventListener("click", backfillAiTags);
+$("#clearSeedMetrics").addEventListener("click", async () => {
+  if (!window.confirm("初期参考スコアをすべて削除します。曲自体と本物の回答は残ります。続行しますか？")) return;
+  const button = $("#clearSeedMetrics");
+  button.disabled = true;
+  try {
+    const deleted = await rpc("admin_clear_seed_metrics");
+    await loadSongs();
+    $("#adminStatus").textContent = deleted + "曲分の初期参考スコアを削除しました。";
+  } catch (error) {
+    $("#adminStatus").textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
 $("#logoutBtn").addEventListener("click", () => {
   accessToken = null;
   sessionStorage.removeItem(SESSION_KEY);
