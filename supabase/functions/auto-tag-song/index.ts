@@ -105,8 +105,11 @@ Deno.serve(async (req) => {
 
     const youtubeUrl = "https://www.youtube.com/watch?v=" + videoId;
     const songResponse = await fetch(
-      supabaseUrl + "/rest/v1/songs?select=id,title,artist,year,youtube_url&youtube_url=eq." +
-        encodeURIComponent(youtubeUrl) + "&order=id.desc&limit=1",
+      supabaseUrl +
+        "/rest/v1/songs?select=id,title,artist,year,youtube_url,youtube_video_id" +
+        "&or=(youtube_video_id.eq." + encodeURIComponent(videoId) +
+        ",youtube_url.eq." + encodeURIComponent(youtubeUrl) + ")" +
+        "&order=id.desc&limit=1",
       { headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey } },
     );
     const songRows = await parseJson(songResponse);
