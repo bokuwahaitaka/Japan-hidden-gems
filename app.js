@@ -36,6 +36,7 @@ const favoritesGrid = $("#favoritesGrid");
 const SESSION_KEY = "jhg_supabase_session_v1";
 const PENDING_ACCOUNT_KEY = "jhg_pending_account_email_v1";
 const PENDING_PASSWORD_KEY = "jhg_pending_account_password_v1";
+const PENDING_RESET_KEY = "jhg_pending_password_reset_v1";
 
 /* =========================
    GENERAL
@@ -126,6 +127,11 @@ function applyInterfaceLanguage(type = audience) {
     "#authPasswordHint": ["Use at least 8 characters.", "8文字以上で入力してください。"],
     "#signInButton": ["Log in", "ログイン"],
     "#createAccountButton": ["Create account", "新規登録"],
+    "#forgotPasswordButton": ["Forgot your password?", "パスワードを忘れた場合"],
+    "#authResetCopy": ["Enter a new password for your account.", "アカウントの新しいパスワードを入力してください。"],
+    "#resetPasswordLabel": ["New password", "新しいパスワード"],
+    "#resetPasswordHint": ["Use at least 8 characters.", "8文字以上で入力してください。"],
+    "#resetPasswordButton": ["Update password", "パスワードを更新"],
     "#authGuestNote": ["Anonymous use stays available. Creating an account keeps the current browser’s favorites and responses.", "匿名利用も継続できます。新規登録すると、このブラウザのお気に入りと回答をそのまま引き継ぎます。"],
     "#authFinishCopy": ["Email confirmed. Set a password to finish creating your account.", "メール確認が完了しました。パスワードを設定すると登録完了です。"],
     "#finishPasswordLabel": ["New password", "新しいパスワード"],
@@ -411,6 +417,10 @@ function consumeAuthCallback() {
     localStorage.removeItem(PENDING_ACCOUNT_KEY);
   }
 
+  if (params.get("type") === "recovery") {
+    localStorage.setItem(PENDING_RESET_KEY, "true");
+  }
+
   history.replaceState(null, "", window.location.pathname + window.location.search);
   return true;
 }
@@ -420,13 +430,18 @@ function isMemberAccount() {
 }
 
 function syncAccountUi() {
+  const resettingPassword =
+    localStorage.getItem(PENDING_RESET_KEY) === "true" &&
+    Boolean(currentUser?.email);
   const needsPassword =
+    !resettingPassword &&
     localStorage.getItem(PENDING_PASSWORD_KEY) === "true" &&
     Boolean(currentUser?.email);
-  const member = isMemberAccount() && !needsPassword;
+  const member = isMemberAccount() && !needsPassword && !resettingPassword;
 
-  $("#authGuestPanel")?.classList.toggle("hidden", member || needsPassword);
+  $("#authGuestPanel")?.classList.toggle("hidden", member || needsPassword || resettingPassword);
   $("#authFinishPanel")?.classList.toggle("hidden", !needsPassword);
+  $("#authResetPanel")?.classList.toggle("hidden", !resettingPassword);
   $("#authMemberPanel")?.classList.toggle("hidden", !member);
 
   const email = $("#accountEmail");
@@ -517,6 +532,72 @@ async function createMemberAccount() {
   });
 }
 
+
+
+async function requestPasswordReset() {
+  const email = $("#authEmail").value.trim();
+  const error = $("#authError");
+  error.textContent = "";
+
+  if (!email) {
+    error.textContent = ui("Enter your email address first.", "先にメールアドレスを入力してください。");
+    $("#authEmail")?.focus();
+    return;
+  }
+
+  await withBusy(async () => {
+    try {
+      await authRequest(
+        "recover?redirect_to=" + encodeURIComponent(window.location.origin + window.location.pathname),
+        {
+          method: "POST",
+          body: JSON.stringify({ email })
+        }
+      );
+
+      showStatus(ui("Password reset email sent.", "パスワード再設定メールを送信しました。"), "success", true);
+      error.textContent = ui("Check your inbox and open the reset link.", "受信箱を確認し、再設定リンクを開いてください。");
+    } catch (resetRequestError) {
+      console.error(resetRequestError);
+      error.textContent = ui("Could not send the reset email: ", "再設定メールを送信できませんでした：") + resetRequestError.message;
+    }
+  });
+}
+
+async function updateRecoveredPassword(event) {
+  event.preventDefault();
+
+  const password = $("#resetPassword").value;
+  const error = $("#resetPasswordError");
+  error.textContent = "";
+
+  if (password.length < 8) {
+    error.textContent = ui("Use at least 8 characters.", "8文字以上で入力してください。");
+    return;
+  }
+
+  await withBusy(async () => {
+    try {
+      const user = await authRequest("user", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ password })
+      });
+
+      currentUser = user;
+      const stored = readSession();
+      if (stored) saveSession({ ...stored, user });
+
+      localStorage.removeItem(PENDING_RESET_KEY);
+      syncAccountUi();
+      $("#authDialog")?.close();
+      showStatus(ui("Password updated. You are logged in.", "パスワードを更新し、ログインしました。"), "success");
+    } catch (resetError) {
+      console.error(resetError);
+      error.textContent = ui("Could not update the password: ", "パスワードを更新できませんでした：") + resetError.message;
+    }
+  });
+}
 
 async function finishMemberAccount(event) {
   event.preventDefault();
@@ -2446,6 +2527,18 @@ function wireUi() {
     ?.addEventListener(
       "click",
       createMemberAccount
+    );
+
+  $("#forgotPasswordButton")
+    ?.addEventListener(
+      "click",
+      requestPasswordReset
+    );
+
+  $("#resetPasswordForm")
+    ?.addEventListener(
+      "submit",
+      updateRecoveredPassword
     );
 
   $("#finishAccountForm")
