@@ -13,6 +13,9 @@ let busy = false;
 let listenerProfile = null;
 let genreOptions = [];
 let selectedGenreIds = [];
+let demographicOptions = [];
+let selectedCountry = null;
+let selectedAgeBand = null;
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -20,6 +23,8 @@ const cards = $("#cards");
 const sortSelect = $("#sortSelect");
 const ratingSections = $("#ratingSections");
 const statusBar = $("#statusBar");
+const countryFilter = $("#countryFilter");
+const ageFilter = $("#ageFilter");
 
 const SESSION_KEY = "jhg_supabase_session_v1";
 
@@ -86,6 +91,8 @@ function applyInterfaceLanguage(type = audience) {
     "#overseasResponseLabel": ["overseas responses", "海外からの回答"],
     "#rankingEyebrow": ["DISCOVERY GAP RANKING", "海外との認知ギャップランキング"],
     "#rankingTitle": ["Hidden Gem Index", "隠れた名曲ランキング"],
+    "#countryFilterLabel": ["Country", "国別"],
+    "#ageFilterLabel": ["Age band", "年齢別"],
     "#rankingCopy": ["Hidden Gem Score = Japan Recommendation × (Overseas Rating ÷ 5) × (1 − Overseas Awareness).", "隠れた名曲スコア ＝ 日本での推薦率 ×（海外での評価 ÷ 5）×（1 − 海外での認知度）"],
     "#requestEyebrow": ["ADD A HIDDEN GEM", "曲を推薦"],
     "#requestTitle": ["Recommend a song to the world.", "海外の人に聴いてほしい曲を推薦しよう。"],
@@ -97,6 +104,7 @@ function applyInterfaceLanguage(type = audience) {
   Object.entries(copy).forEach(([selector, values]) => setText(selector, ja ? values[1] : values[0]));
   const input = $("#songSearchTitle");
   if (input) input.placeholder = ja ? "例：プラスティック・ラブ" : "e.g. Plastic Love";
+  renderDemographicOptions();
   if (songs.length) render();
 }
 
@@ -588,6 +596,112 @@ async function saveListenerProfile(event) {
   });
 }
 
+
+/* =========================
+   DEMOGRAPHIC FILTERS
+========================= */
+
+async function loadDemographicOptions() {
+  demographicOptions =
+    await rest(
+      "rpc/get_demographic_filter_options",
+      {
+        method: "POST",
+        authenticated: true,
+        body: JSON.stringify({})
+      }
+    ) ?? [];
+
+  renderDemographicOptions();
+}
+
+function renderDemographicOptions() {
+  if (!countryFilter || !ageFilter) return;
+
+  const countries =
+    demographicOptions.filter(
+      (option) =>
+        option.filter_type === "country"
+    );
+
+  const ages =
+    demographicOptions.filter(
+      (option) =>
+        option.filter_type === "age"
+    );
+
+  countryFilter.innerHTML =
+    '<option value="">' +
+      ui("All countries", "すべての国") +
+    "</option>" +
+    countries
+      .map(
+        (option) =>
+          '<option value="' +
+          escapeHtml(option.value) +
+          '">' +
+          escapeHtml(option.label) +
+          " (" +
+          Number(option.respondent_count) +
+          ")" +
+          "</option>"
+      )
+      .join("");
+
+  ageFilter.innerHTML =
+    '<option value="">' +
+      ui("All ages", "すべての年齢") +
+    "</option>" +
+    ages
+      .map(
+        (option) =>
+          '<option value="' +
+          escapeHtml(option.value) +
+          '">' +
+          escapeHtml(
+            ui(
+              option.label_en,
+              option.label_ja
+            )
+          ) +
+          " (" +
+          Number(option.respondent_count) +
+          ")" +
+          "</option>"
+      )
+      .join("");
+
+  countryFilter.value =
+    selectedCountry ?? "";
+
+  ageFilter.value =
+    selectedAgeBand ?? "";
+}
+
+async function applyCountryFilter() {
+  selectedCountry =
+    countryFilter.value || null;
+
+  if (selectedCountry) {
+    selectedAgeBand = null;
+    ageFilter.value = "";
+  }
+
+  await loadAll();
+}
+
+async function applyAgeFilter() {
+  selectedAgeBand =
+    ageFilter.value || null;
+
+  if (selectedAgeBand) {
+    selectedCountry = null;
+    countryFilter.value = "";
+  }
+
+  await loadAll();
+}
+
 /* =========================
    LOAD AGGREGATED DATA
 ========================= */
@@ -602,11 +716,14 @@ async function loadAll() {
   const [rows, hiddenRows] =
     await Promise.all([
       rest(
-        "rpc/get_hidden_gem_data",
+        "rpc/get_hidden_gem_data_segment",
         {
           method: "POST",
           authenticated: true,
-          body: JSON.stringify({})
+          body: JSON.stringify({
+            p_country_code: selectedCountry,
+            p_age_band: selectedAgeBand
+          })
         }
       ),
       rest(
@@ -1801,6 +1918,18 @@ function wireUi() {
       () => $("#profileDialog")?.close()
     );
 
+  countryFilter
+    ?.addEventListener(
+      "change",
+      applyCountryFilter
+    );
+
+  ageFilter
+    ?.addEventListener(
+      "change",
+      applyAgeFilter
+    );
+
   sortSelect
     ?.addEventListener(
       "change",
@@ -1838,6 +1967,8 @@ async function start() {
     await ensureAnonymousUser();
 
     await loadListenerProfile();
+
+    await loadDemographicOptions();
 
     await loadAll();
 
