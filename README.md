@@ -27,3 +27,10 @@ Then open http://localhost:8000
 3. Use authorized Spotify/Apple Music embeds where terms allow.
 4. Strengthen anti-spam controls beyond anonymous-user rate limits.
 5. Compute confidence intervals, not just raw averages.
+
+
+## YouTube title search setup
+
+The title-search UI calls the Supabase Edge Function in `supabase/functions/search-youtube`.
+Enable YouTube Data API v3, store the key as `YOUTUBE_API_KEY`, and deploy
+`search-youtube`. Never put the key in browser code.

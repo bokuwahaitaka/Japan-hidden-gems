@@ -20,7 +20,7 @@ function performanceSortedSongs() {
 
 function performanceCard(song, index) {
   const recommended = song.myRecommendation?.recommended;
-  const scoreText = song.score === null ? "Pending" : song.score;
+  const scoreText = song.score === null ? ui("Pending", "集計待ち") : song.score;
   const scoreSuffix = song.score === null ? "" : " / 100";
 
   return `
@@ -34,21 +34,21 @@ function performanceCard(song, index) {
         </div>
 
         <div class="metrics">
-          <p>Japan recommendation: <strong>${metric(song.japan, "%")}</strong></p>
-          <p>Overseas awareness: <strong>${metric(song.awareness, "%")}</strong></p>
-          <p>Overseas post-listening rating: <strong>${metric(song.overseas, " / 5")}</strong></p>
+          <p>${ui("Japan recommendation:", "日本での推薦率：")} <strong>${metric(song.japan, "%")}</strong></p>
+          <p>${ui("Overseas awareness:", "海外での認知度：")} <strong>${metric(song.awareness, "%")}</strong></p>
+          <p>${ui("Overseas post-listening rating:", "海外での視聴後評価：")} <strong>${metric(song.overseas, " / 5")}</strong></p>
         </div>
 
         <div class="score-row">
           <strong>${scoreText}</strong>
-          <span>Hidden Gem Score ${scoreSuffix}</span>
+          <span>${ui("Hidden Gem Score", "隠れた名曲スコア")} ${scoreSuffix}</span>
           ${song.score !== null && song.provisional ? '<span class="badge">Provisional</span>' : ""}
         </div>
 
         <p class="sample-note">
-          ${song.recommendationTotal} Japan votes ·
-          ${song.overseasTotal} overseas responses ·
-          ${song.postListenRatingCount} post-listening ratings
+          ${song.recommendationTotal} ${ui("Japan votes", "件の日本投票")} ·
+          ${song.overseasTotal} ${ui("overseas responses", "件の海外回答")} ·
+          ${song.postListenRatingCount} ${ui("post-listening ratings", "件の視聴後評価")}
         </p>
 
         <div class="actions">
@@ -60,14 +60,14 @@ function performanceCard(song, index) {
             class="action japan-action ${recommended === true ? "selected" : ""}"
             onclick="window.submitRecommendation(${song.id}, true)"
           >
-            ${recommended === true ? "Recommended ✓" : "Recommend"}
+            ${recommended === true ? ui("Recommended ✓", "推薦済み ✓") : ui("Recommend", "推薦する")}
           </button>
 
           <button
             class="action japan-action ${recommended === false ? "selected" : ""}"
             onclick="window.submitRecommendation(${song.id}, false)"
           >
-            ${recommended === false ? "Not for me ✓" : "Not for me"}
+            ${recommended === false ? ui("Not for me ✓", "推薦しない ✓") : ui("Not for me", "推薦しない")}
           </button>
         </div>
       </div>
@@ -150,7 +150,7 @@ render = function () {
       "beforeend",
       `<div style="display:flex;justify-content:center;padding:20px 0 8px;">
         <button id="loadMoreSongs" class="button" type="button">
-          Show ${Math.min(SONGS_PER_PAGE, sortedSongs.length - visibleSongCount)} more
+          ${ui("Show", "さらに")} ${Math.min(SONGS_PER_PAGE, sortedSongs.length - visibleSongCount)} ${ui("more", "曲を表示")}
         </button>
       </div>`
     );

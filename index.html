@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Japan Hidden Gems</title>
   <meta name="description" content="Discover Japanese songs loved in Japan but still under-discovered overseas." />
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=6" />
 </head>
 <body>
   <header class="site-header">
@@ -19,35 +19,35 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div>
-          <p class="eyebrow">CROSS-CULTURAL MUSIC DISCOVERY</p>
-          <h1>Japanese songs the world hasn’t found yet.</h1>
-          <p class="lead">Japanese listeners recommend songs. Overseas listeners tell us whether they already knew them, then rate them after listening.</p>
+          <p id="heroEyebrow" class="eyebrow">CROSS-CULTURAL MUSIC DISCOVERY</p>
+          <h1 id="heroTitle">Japanese songs the world hasn’t found yet.</h1>
+          <p id="heroLead" class="lead">Japanese listeners recommend songs. Overseas listeners tell us whether they already knew them, then rate them after listening.</p>
         </div>
         <div class="audience-card">
-          <p class="eyebrow dark">CHOOSE YOUR ROLE</p>
-          <h2>How are you listening?</h2>
-          <button id="japanListener" class="role-button" type="button"><strong>I’m listening from Japan</strong><span>Recommend songs you think deserve more attention overseas.</span></button>
-          <button id="overseasListener" class="role-button" type="button"><strong>I’m listening from outside Japan</strong><span>Discover J-pop you haven't heard yet. Tell us if you knew a song, then rate it after listening.</span></button>
+          <p id="audienceEyebrow" class="eyebrow dark">CHOOSE YOUR ROLE</p>
+          <h2 id="audienceTitle">How are you listening?</h2>
+          <button id="japanListener" class="role-button" type="button"><strong id="japanRoleTitle">I’m listening from Japan</strong><span id="japanRoleCopy">Recommend songs you think deserve more attention overseas.</span></button>
+          <button id="overseasListener" class="role-button" type="button"><strong id="overseasRoleTitle">I’m listening from outside Japan</strong><span id="overseasRoleCopy">Discover J-pop you haven't heard yet. Tell us if you knew a song, then rate it after listening.</span></button>
           <button id="changeAudienceBtn" class="text-button hidden" type="button">Change audience</button>
         </div>
       </div>
     </section>
 
-    <section class="stats"><div class="shell stats-grid"><div><strong id="songCount">0</strong><span>songs</span></div><div><strong id="japanVoteCount">0</strong><span>Japan votes</span></div><div><strong id="overseasResponseCount">0</strong><span>overseas responses</span></div></div></section>
+    <section class="stats"><div class="shell stats-grid"><div><strong id="songCount">0</strong><span id="songCountLabel">songs</span></div><div><strong id="japanVoteCount">0</strong><span id="japanVoteLabel">Japan votes</span></div><div><strong id="overseasResponseCount">0</strong><span id="overseasResponseLabel">overseas responses</span></div></div></section>
     <div id="statusBar" class="status hidden" aria-live="polite"></div>
 
     <section id="songRequestSection" class="shell section compact japan-only">
-      <p class="eyebrow dark">ADD A HIDDEN GEM</p><h2>Recommend a song to the world.</h2>
-      <p class="section-copy">Paste a public YouTube link. We will read its title and channel, prevent duplicates, and add it to the ranking immediately.</p>
-      <form id="songRequestForm" class="song-request-form"><label class="form-field" for="songRequestUrl"><span>YouTube URL</span><input id="songRequestUrl" class="text-input song-url-input" type="url" inputmode="url" autocomplete="url" placeholder="https://www.youtube.com/watch?v=..." required /></label><button id="songRequestSubmit" class="button profile-submit" type="submit">Add to ranking</button></form>
-      <p id="songRequestNote" class="form-error" aria-live="polite"></p><p class="sample-note">Japan-profile listeners can add up to five songs in 24 hours. Only public YouTube videos can be added.</p>
+      <p id="requestEyebrow" class="eyebrow dark">ADD A HIDDEN GEM</p><h2 id="requestTitle">Recommend a song to the world.</h2>
+      <p id="requestCopy" class="section-copy">Enter a song title, choose the correct video from three YouTube results, and add it to the ranking immediately.</p>
+      <form id="songRequestForm" class="song-request-form"><label class="form-field" for="songSearchTitle"><span id="songSearchLabel">Song title</span><input id="songSearchTitle" class="text-input song-url-input" type="search" minlength="2" maxlength="100" autocomplete="off" placeholder="e.g. Plastic Love" required /></label><button id="songSearchSubmit" class="button profile-submit" type="submit">Search</button></form>
+      <p id="songRequestNote" class="form-error" aria-live="polite"></p><div id="youtubeCandidates" class="youtube-candidates"></div><p id="requestLimitCopy" class="sample-note">Check the title and channel before choosing a video.</p>
     </section>
 
     <section class="shell section" id="ranking">
-      <div class="section-head"><div><p class="eyebrow dark">DISCOVERY GAP RANKING</p><h2>Hidden Gem Index</h2></div>
+      <div class="section-head"><div><p id="rankingEyebrow" class="eyebrow dark">DISCOVERY GAP RANKING</p><h2 id="rankingTitle">Hidden Gem Index</h2></div>
         <select id="sortSelect" class="select" aria-label="Sort ranking"><option value="score">Highest Hidden Gem Score</option><option value="japan">Highest Japan Recommendation</option><option value="awareness">Lowest Overseas Awareness</option><option value="rating">Highest Overseas Rating</option></select>
       </div>
-      <p class="section-copy">Hidden Gem Score = Japan Recommendation × (Overseas Rating ÷ 5) × (1 − Overseas Awareness).</p>
+      <p id="rankingCopy" class="section-copy">Hidden Gem Score = Japan Recommendation × (Overseas Rating ÷ 5) × (1 − Overseas Awareness).</p>
       <div id="cards" class="cards"><p class="muted">Loading songs…</p></div>
     </section>
 
@@ -65,7 +65,7 @@
   <footer><div class="shell footer-inner"><div class="brand">JAPAN HIDDEN GEMS</div><p>Prototype — no copyrighted audio or artwork is hosted here.</p></div></footer>
 
 <script src="jwt-retry.js?v=1"></script>
-<script src="app.js?v=9"></script>
-<script src="performance.js?v=1"></script>
+<script src="app.js?v=10"></script>
+<script src="performance.js?v=2"></script>
 </body>
 </html>
