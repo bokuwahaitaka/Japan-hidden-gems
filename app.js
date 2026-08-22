@@ -32,6 +32,7 @@ const ageFilter = $("#ageFilter");
 const songTagFilter = $("#songTagFilter");
 const personalizedGrid = $("#personalizedGrid");
 const favoritesGrid = $("#favoritesGrid");
+const similarSongsGrid = $("#similarSongsGrid");
 
 const SESSION_KEY = "jhg_supabase_session_v1";
 const PENDING_ACCOUNT_KEY = "jhg_pending_account_email_v1";
@@ -87,6 +88,8 @@ function applyInterfaceLanguage(type = audience) {
   const copy = {
     "#accountBtn": ["Account", "アカウント"],
     "#aboutBtn": ["How it works", "仕組み"],
+    "#similarEyebrow": ["SIMILAR SONGS", "似ている曲"],
+    "#similarSongsTitle": ["More songs like this", "この曲に似ている曲"],
     "#heroEyebrow": ["CROSS-CULTURAL MUSIC DISCOVERY", "日本の隠れた名曲を世界へ"],
     "#heroTitle": ["Japanese songs the world hasn’t found yet.", "まだ世界に知られていない日本の名曲を届けよう。"],
     "#heroLead": ["Japanese listeners recommend songs. Overseas listeners tell us whether they already knew them, then rate them after listening.", "海外の人に聴いてほしい日本の曲を推薦してください。海外リスナーの認知度と視聴後評価から、隠れた名曲を発見します。"],
@@ -1327,6 +1330,100 @@ function renderStats() {
     overseasResponses;
 }
 
+
+function similarButton(song) {
+  return `
+    <button
+      class="action similar-action"
+      onclick="window.openSimilarSongs(${song.id})"
+    >
+      ${ui("Similar songs", "似ている曲")}
+    </button>
+  `;
+}
+
+async function openSimilarSongs(songId) {
+  const numericSongId = Number(songId);
+  const sourceSong = songs.find((song) => Number(song.id) === numericSongId);
+  const dialog = $("#similarSongsDialog");
+
+  if (!sourceSong || !similarSongsGrid || !dialog) return;
+
+  $("#similarSongsSource").textContent =
+    sourceSong.title + " — " + sourceSong.artist;
+  similarSongsGrid.innerHTML =
+    '<p class="muted">' + ui("Finding similar songs…", "似ている曲を探しています…") + "</p>";
+  dialog.showModal();
+
+  try {
+    const rows = await rest("rpc/get_similar_songs", {
+      method: "POST",
+      authenticated: true,
+      body: JSON.stringify({
+        p_song_id: numericSongId,
+        p_limit: 6
+      })
+    });
+
+    similarSongsGrid.innerHTML = (rows ?? []).map((row) => {
+      const sharedTags = Array.isArray(row.shared_tags)
+        ? row.shared_tags
+        : [];
+      const reasons = sharedTags.map((tag) =>
+        escapeHtml(ui(tag.label_en, tag.label_ja))
+      );
+      const sameArtist =
+        String(row.artist).toLowerCase() ===
+        String(sourceSong.artist).toLowerCase();
+      const closeYear =
+        row.year && sourceSong.year &&
+        Math.abs(Number(row.year) - Number(sourceSong.year)) <= 5;
+
+      if (!reasons.length && sameArtist) {
+        reasons.push(ui("Same artist", "同じアーティスト"));
+      }
+      if (!reasons.length && closeYear) {
+        reasons.push(ui("Similar era", "近い年代"));
+      }
+
+      return `
+        <article class="similar-song-card">
+          <p class="eyebrow dark">${ui("SIMILAR PICK", "類似候補")}</p>
+          <h3>${escapeHtml(row.title)}</h3>
+          <p class="meta">
+            ${escapeHtml(row.artist)}
+            ${row.year ? " · " + escapeHtml(row.year) : ""}
+          </p>
+          <p class="similar-reason">
+            ${reasons.length
+              ? ui("In common: ", "共通点：") + reasons.join(" · ")
+              : ui("Selected from nearby hidden-gem signals", "隠れた名曲データから近い候補を選出")}
+          </p>
+          <div class="actions">
+            <button class="action primary" onclick="window.openRating(${row.song_id})">
+              ${ui("Listen", "聴いてみる")}
+            </button>
+            ${favoriteButton({ id: Number(row.song_id) })}
+            <button class="action" onclick="window.openSimilarSongs(${row.song_id})">
+              ${ui("More like this", "さらに似た曲")}
+            </button>
+          </div>
+        </article>
+      `;
+    }).join("") || `
+      <p class="muted">
+        ${ui("No similar songs were found yet.", "似ている曲はまだ見つかりませんでした。")}
+      </p>
+    `;
+  } catch (error) {
+    console.error(error);
+    similarSongsGrid.innerHTML =
+      '<p class="form-error">' +
+      escapeHtml(ui("Could not load similar songs: ", "似ている曲を読み込めませんでした：") + error.message) +
+      "</p>";
+  }
+}
+
 function favoriteButton(song) {
   const saved = favoriteSongIds.has(Number(song.id));
   return `
@@ -1359,6 +1456,7 @@ function renderFavorites() {
           ${ui("Listen", "聴いてみる")}
         </button>
         ${favoriteButton(song)}
+          ${similarButton(song)}
       </div>
     </article>
   `).join("") || `
@@ -1431,6 +1529,7 @@ function renderPersonalized() {
             ${ui("Listen", "聴いてみる")}
           </button>
           ${favoriteButton(song)}
+          ${similarButton(song)}
           <button class="action" onclick="window.dismissPersonalizedSong(${song.id})">
             ${ui("Not interested", "興味なし")}
           </button>
@@ -1761,6 +1860,7 @@ function render() {
                   </button>
 
                   ${favoriteButton(song)}
+          ${similarButton(song)}
 
                   <button
                     class="action"
@@ -2511,6 +2611,12 @@ function wireUi() {
       openAccountDialog
     );
 
+  $("#closeSimilarSongsDialog")
+    ?.addEventListener(
+      "click",
+      () => $("#similarSongsDialog")?.close()
+    );
+
   $("#closeAuthDialog")
     ?.addEventListener(
       "click",
@@ -2639,6 +2745,9 @@ window.dismissPersonalizedSong =
 
 window.toggleFavorite =
   toggleFavorite;
+
+window.openSimilarSongs =
+  openSimilarSongs;
 
 /* =========================
    START
