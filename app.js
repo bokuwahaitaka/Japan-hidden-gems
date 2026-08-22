@@ -82,11 +82,28 @@ function ui(en, ja) {
   return interfaceLanguage === "ja" ? ja : en;
 }
 
+function asciiTitle(value) {
+  return String(value || "")
+    .normalize("NFKC")
+    .replace(/[^\x20-\x7E]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function songTitle(song) {
-  if (interfaceLanguage === "en" && song?.title_en?.trim()) {
-    return song.title_en.trim();
+  if (interfaceLanguage === "en") {
+    const romanized = asciiTitle(song?.title_en);
+    return romanized || `Japanese Song #${song?.id ?? ""}`;
   }
   return song?.title ?? "";
+}
+
+function songArtist(song) {
+  if (interfaceLanguage === "en") {
+    const romanized = asciiTitle(song?.artist_en);
+    return romanized || "Japanese Artist";
+  }
+  return song?.artist ?? "";
 }
 
 function setInterfaceLanguage(language, persist = true) {
@@ -1216,7 +1233,7 @@ async function loadAll() {
         }
       ),
       rest(
-        "songs?select=id,title_en",
+        "songs?select=id,title_en,artist_en",
         { authenticated: true }
       ),
       rest(
@@ -1265,8 +1282,11 @@ async function loadAll() {
     (feedbackRows ?? []).map((row) => Number(row.song_id))
   );
 
-  const englishTitles = new Map(
-    (titleRows ?? []).map((row) => [Number(row.id), row.title_en])
+  const englishMetadata = new Map(
+    (titleRows ?? []).map((row) => [
+      Number(row.id),
+      { title_en: row.title_en, artist_en: row.artist_en }
+    ])
   );
 
   const hiddenSongIds =
@@ -1399,10 +1419,13 @@ async function loadAll() {
           row.title,
 
         title_en:
-          englishTitles.get(Number(row.id)) ?? null,
+          englishMetadata.get(Number(row.id))?.title_en ?? null,
 
         artist:
           row.artist,
+
+        artist_en:
+          englishMetadata.get(Number(row.id))?.artist_en ?? null,
 
         year:
           row.year,
@@ -1502,7 +1525,7 @@ async function openSimilarSongs(songId) {
   if (!sourceSong || !similarSongsGrid || !dialog) return;
 
   $("#similarSongsSource").textContent =
-    songTitle(sourceSong) + " — " + sourceSong.artist;
+    songTitle(sourceSong) + " — " + songArtist(sourceSong);
   similarSongsGrid.innerHTML =
     '<p class="muted">' + ui("Finding similar songs…", "似ている曲を探しています…") + "</p>";
   dialog.showModal();
@@ -1617,7 +1640,7 @@ function renderFavorites() {
       <div>
         <p class="eyebrow dark">${ui("SAVED", "お気に入り")}</p>
         <h3>${escapeHtml(songTitle(song))}</h3>
-        <p class="meta">${escapeHtml(song.artist)}</p>
+        <p class="meta">${escapeHtml(songArtist(song))}</p>
       </div>
       <div class="actions">
         <button class="action primary" onclick="window.openRating(${song.id})">
@@ -1701,7 +1724,7 @@ function renderPersonalized() {
       <article class="personalized-card">
         <p class="personalized-score">${Math.round(song.recommendationScore)}% MATCH</p>
         <h3>${escapeHtml(songTitle(song))}</h3>
-        <p class="meta">${escapeHtml(song.artist)}</p>
+        <p class="meta">${escapeHtml(songArtist(song))}</p>
         <p class="personalized-reason">
           ${reasons
             ? ui("Because you like ", "おすすめ理由：") + reasons
@@ -1946,7 +1969,7 @@ function render() {
                 </h3>
 
                 <div class="meta">
-                  ${escapeHtml(song.artist)}
+                  ${escapeHtml(songArtist(song))}
                   ${song.year ? " · " + escapeHtml(song.year) : ""}
                 </div>
 
