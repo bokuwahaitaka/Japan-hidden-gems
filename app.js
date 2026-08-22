@@ -19,6 +19,7 @@ let selectedAgeBand = null;
 let songTagOptions = [];
 let selectedSongTag = null;
 let personalizedRecommendations = [];
+let favoriteSongIds = new Set();
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -30,6 +31,7 @@ const countryFilter = $("#countryFilter");
 const ageFilter = $("#ageFilter");
 const songTagFilter = $("#songTagFilter");
 const personalizedGrid = $("#personalizedGrid");
+const favoritesGrid = $("#favoritesGrid");
 
 const SESSION_KEY = "jhg_supabase_session_v1";
 
@@ -94,6 +96,10 @@ function applyInterfaceLanguage(type = audience) {
     "#songCountLabel": ["songs", "曲"],
     "#japanVoteLabel": ["Japan votes", "日本からの投票"],
     "#overseasResponseLabel": ["overseas responses", "海外からの回答"],
+    "#favoritesBtn": ["My Hidden Gems", "お気に入り"],
+    "#favoritesEyebrow": ["MY HIDDEN GEMS", "保存した曲"],
+    "#favoritesTitle": ["Your saved songs", "お気に入りの曲"],
+    "#favoritesCopy": ["Save songs you want to hear again.", "あとでもう一度聴きたい曲を保存できます。"],
     "#personalizedEyebrow": ["FOR YOU", "あなたへのおすすめ"],
     "#personalizedTitle": ["Songs picked for you", "あなたに合いそうな曲"],
     "#personalizedCopy": ["Based on your favorite genres, recommendations, ratings, and song tags.", "好きなジャンル・推薦・評価・曲タグをもとに選んでいます。"],
@@ -114,7 +120,11 @@ function applyInterfaceLanguage(type = audience) {
   const input = $("#songSearchTitle");
   if (input) input.placeholder = ja ? "例：プラスティック・ラブ" : "e.g. Plastic Love";
   renderDemographicOptions();
-  if (songs.length) render();
+  if (songs.length) {
+    render();
+    renderPersonalized();
+    renderFavorites();
+  }
 }
 
 function youtubeEmbedUrl(url) {
@@ -758,7 +768,7 @@ async function loadAll() {
     );
   }
 
-  const [rows, hiddenRows, tagRows, personalizedRows] =
+  const [rows, hiddenRows, tagRows, personalizedRows, favoriteRows] =
     await Promise.all([
       rest(
         "rpc/get_hidden_gem_data_segment",
@@ -795,8 +805,18 @@ async function loadAll() {
           authenticated: true,
           body: JSON.stringify({ p_limit: 5 })
         }
+      ),
+      rest(
+        "favorite_songs?select=song_id,created_at&user_id=eq." +
+          encodeURIComponent(currentUser.id) +
+          "&order=created_at.desc",
+        { authenticated: true }
       )
     ]);
+
+  favoriteSongIds = new Set(
+    (favoriteRows ?? []).map((row) => Number(row.song_id))
+  );
 
   const hiddenSongIds =
     new Set(
@@ -974,6 +994,7 @@ async function loadAll() {
   renderStats();
   render();
   renderPersonalized();
+  renderFavorites();
 }
 
 /* =========================
@@ -1007,6 +1028,87 @@ function renderStats() {
     overseasResponses;
 }
 
+function favoriteButton(song) {
+  const saved = favoriteSongIds.has(Number(song.id));
+  return `
+    <button
+      class="action favorite-action ${saved ? "selected" : ""}"
+      onclick="window.toggleFavorite(${song.id})"
+      aria-pressed="${saved}"
+    >
+      ${saved ? ui("Saved ♥", "保存済み ♥") : ui("Save ♡", "お気に入り ♡")}
+    </button>
+  `;
+}
+
+function renderFavorites() {
+  if (!favoritesGrid) return;
+
+  const favorites = songs.filter((song) =>
+    favoriteSongIds.has(Number(song.id))
+  );
+
+  favoritesGrid.innerHTML = favorites.map((song) => `
+    <article class="favorite-card">
+      <div>
+        <p class="eyebrow dark">${ui("SAVED", "お気に入り")}</p>
+        <h3>${escapeHtml(song.title)}</h3>
+        <p class="meta">${escapeHtml(song.artist)}</p>
+      </div>
+      <div class="actions">
+        <button class="action primary" onclick="window.openRating(${song.id})">
+          ${ui("Listen", "聴いてみる")}
+        </button>
+        ${favoriteButton(song)}
+      </div>
+    </article>
+  `).join("") || `
+    <p class="muted">
+      ${ui(
+        "No saved songs yet. Tap Save on any song to add it here.",
+        "まだお気に入りはありません。曲の「お気に入り」を押すとここに保存されます。"
+      )}
+    </p>
+  `;
+}
+
+async function toggleFavorite(songId) {
+  const numericSongId = Number(songId);
+  const saved = favoriteSongIds.has(numericSongId);
+
+  try {
+    if (saved) {
+      await rest(
+        "favorite_songs?user_id=eq." +
+          encodeURIComponent(currentUser.id) +
+          "&song_id=eq." +
+          encodeURIComponent(numericSongId),
+        {
+          method: "DELETE",
+          authenticated: true,
+          headers: { Prefer: "return=minimal" }
+        }
+      );
+      showStatus(ui("Removed from My Hidden Gems.", "お気に入りから削除しました。"));
+    } else {
+      await rest("favorite_songs", {
+        method: "POST",
+        authenticated: true,
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          song_id: numericSongId
+        })
+      });
+      showStatus(ui("Saved to My Hidden Gems.", "お気に入りに保存しました。"));
+    }
+
+    await loadAll();
+  } catch (error) {
+    showStatus(error.message, "error", true);
+  }
+}
+
 function renderPersonalized() {
   if (!personalizedGrid) return;
 
@@ -1029,6 +1131,7 @@ function renderPersonalized() {
           <button class="action primary" onclick="window.openRating(${song.id})">
             ${ui("Listen", "聴いてみる")}
           </button>
+          ${favoriteButton(song)}
           <button class="action" onclick="window.dismissPersonalizedSong(${song.id})">
             ${ui("Not interested", "興味なし")}
           </button>
@@ -1357,6 +1460,8 @@ function render() {
                         : "Not for me"
                     }
                   </button>
+
+                  ${favoriteButton(song)}
 
                   <button
                     class="action"
@@ -2101,6 +2206,12 @@ function wireUi() {
   const dialog =
     $("#aboutDialog");
 
+  $("#favoritesBtn")
+    ?.addEventListener(
+      "click",
+      () => $("#myFavorites")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    );
+
   $("#aboutBtn")
     ?.addEventListener(
       "click",
@@ -2178,6 +2289,9 @@ window.reportSongTags =
 
 window.dismissPersonalizedSong =
   dismissPersonalizedSong;
+
+window.toggleFavorite =
+  toggleFavorite;
 
 /* =========================
    START
