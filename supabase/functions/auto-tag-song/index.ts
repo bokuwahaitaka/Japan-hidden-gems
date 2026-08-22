@@ -78,8 +78,22 @@ Deno.serve(async (req) => {
     );
     const profiles = await parseJson(profileResponse);
 
-    if (profiles?.[0]?.listener_group !== "japan") {
-      return json({ error: "Only Japan profiles can add and tag songs." }, 403, origin);
+    const adminResponse = await fetch(
+      supabaseUrl + "/rest/v1/rpc/is_song_admin",
+      {
+        method: "POST",
+        headers: {
+          apikey: anonKey,
+          Authorization: authorization,
+          "Content-Type": "application/json",
+        },
+        body: "{}",
+      },
+    );
+    const isAdmin = adminResponse.ok ? await adminResponse.json() : false;
+
+    if (profiles?.[0]?.listener_group !== "japan" && isAdmin !== true) {
+      return json({ error: "Only Japan profiles or administrators can tag songs." }, 403, origin);
     }
 
     const payload = await req.json();

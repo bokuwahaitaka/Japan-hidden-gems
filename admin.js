@@ -173,6 +173,72 @@ async function setReportStatus(button) {
   }
 }
 
+function youtubeVideoId(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes("youtu.be")) {
+      return parsed.pathname.split("/").filter(Boolean)[0] || null;
+    }
+    return parsed.searchParams.get("v") ||
+      (parsed.pathname.startsWith("/shorts/") ? parsed.pathname.split("/")[2] : null);
+  } catch {
+    return null;
+  }
+}
+
+async function invokeAutoTag(videoId) {
+  const response = await fetch(SUPABASE_URL + "/functions/v1/auto-tag-song", {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: "Bearer " + accessToken,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ videoId })
+  });
+  return parseResponse(response);
+}
+
+async function backfillAiTags() {
+  const button = $("#backfillTags");
+  const candidates = adminSongs
+    .map((song) => ({ song, videoId: youtubeVideoId(song.youtube_url) }))
+    .filter((item) => item.videoId);
+
+  if (!candidates.length) {
+    $("#adminStatus").textContent = "処理できるYouTube曲がありません。";
+    return;
+  }
+
+  if (!window.confirm(candidates.length + "曲をAIタグ付けします。続行しますか？")) return;
+
+  button.disabled = true;
+  let succeeded = 0;
+  let failed = 0;
+
+  for (let index = 0; index < candidates.length; index += 1) {
+    const item = candidates[index];
+    $("#adminStatus").textContent =
+      "AIタグ付け中 " + (index + 1) + " / " + candidates.length +
+      "：" + item.song.title;
+
+    try {
+      await invokeAutoTag(item.videoId);
+      succeeded += 1;
+    } catch (error) {
+      console.error("AI tag backfill failed:", item.song.id, error);
+      failed += 1;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+
+  button.disabled = false;
+  $("#adminStatus").textContent =
+    "AIタグ付け完了：成功 " + succeeded + "曲、失敗 " + failed + "曲";
+  await loadSongs();
+}
+
 async function toggleSong(button) {
   const songId = Number(button.dataset.id);
   const currentlyHidden = button.dataset.hidden === "true";
@@ -273,6 +339,7 @@ $("#cancelDelete").addEventListener("click", () => $("#deleteDialog").close());
 $("#songFilter").addEventListener("input", renderSongs);
 $("#visibilityFilter").addEventListener("change", renderSongs);
 $("#refreshSongs").addEventListener("click", loadSongs);
+$("#backfillTags").addEventListener("click", backfillAiTags);
 $("#logoutBtn").addEventListener("click", () => {
   accessToken = null;
   sessionStorage.removeItem(SESSION_KEY);
