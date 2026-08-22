@@ -36,19 +36,19 @@
     <section class="stats"><div class="shell stats-grid"><div><strong id="songCount">0</strong><span>songs</span></div><div><strong id="japanVoteCount">0</strong><span>Japan votes</span></div><div><strong id="overseasResponseCount">0</strong><span>overseas responses</span></div></div></section>
     <div id="statusBar" class="status hidden" aria-live="polite"></div>
 
+    <section id="songRequestSection" class="shell section compact japan-only">
+      <p class="eyebrow dark">ADD A HIDDEN GEM</p><h2>Recommend a song to the world.</h2>
+      <p class="section-copy">Paste a public YouTube link. We will read its title and channel, prevent duplicates, and add it to the ranking immediately.</p>
+      <form id="songRequestForm" class="song-request-form"><label class="form-field" for="songRequestUrl"><span>YouTube URL</span><input id="songRequestUrl" class="text-input song-url-input" type="url" inputmode="url" autocomplete="url" placeholder="https://www.youtube.com/watch?v=..." required /></label><button id="songRequestSubmit" class="button profile-submit" type="submit">Add to ranking</button></form>
+      <p id="songRequestNote" class="form-error" aria-live="polite"></p><p class="sample-note">Japan-profile listeners can add up to five songs in 24 hours. Only public YouTube videos can be added.</p>
+    </section>
+
     <section class="shell section" id="ranking">
       <div class="section-head"><div><p class="eyebrow dark">DISCOVERY GAP RANKING</p><h2>Hidden Gem Index</h2></div>
         <select id="sortSelect" class="select" aria-label="Sort ranking"><option value="score">Highest Hidden Gem Score</option><option value="japan">Highest Japan Recommendation</option><option value="awareness">Lowest Overseas Awareness</option><option value="rating">Highest Overseas Rating</option></select>
       </div>
       <p class="section-copy">Hidden Gem Score = Japan Recommendation × (Overseas Rating ÷ 5) × (1 − Overseas Awareness).</p>
       <div id="cards" class="cards"><p class="muted">Loading songs…</p></div>
-    </section>
-
-    <section id="songRequestSection" class="shell section compact japan-only">
-      <p class="eyebrow dark">ADD A HIDDEN GEM</p><h2>Recommend a song to the world.</h2>
-      <p class="section-copy">Paste a public YouTube link. We will read its title and channel, prevent duplicates, and add it to the ranking immediately.</p>
-      <form id="songRequestForm" class="song-request-form"><label class="form-field" for="songRequestUrl"><span>YouTube URL</span><input id="songRequestUrl" class="text-input song-url-input" type="url" inputmode="url" autocomplete="url" placeholder="https://www.youtube.com/watch?v=..." required /></label><button id="songRequestSubmit" class="button profile-submit" type="submit">Add to ranking</button></form>
-      <p id="songRequestNote" class="form-error" aria-live="polite"></p><p class="sample-note">Japan-profile listeners can add up to five songs in 24 hours. Only public YouTube videos can be added.</p>
     </section>
 
     <section id="ratingSections" class="rating-sections"></section>
