@@ -391,7 +391,9 @@ function artistDirectoryImage(artistSongs, size = "card") {
   const artistName = songArtist(artistSongs[0]);
   const artistImage = artistSongs.find((song) => song.artist_image_url)?.artist_image_url;
   const artworkSong = artistSongs.find((song) => song.youtube_thumbnail_url || song.youtube_video_id || song.youtube_url);
-  const artwork = artistImage || (artworkSong ? songArtworkUrl(artworkSong) : "");
+  const artwork = artistImage || (artworkSong
+    ? (artworkSong.youtube_thumbnail_url || youtubeThumbnailUrl(artworkSong.youtube_url))
+    : "");
   const fallback = escapeHtml((artistName || "J").trim().slice(0, 1).toUpperCase());
 
   if (!artwork) {
