@@ -223,6 +223,7 @@ async function backfillAiTags() {
   button.disabled = true;
   let succeeded = 0;
   let failed = 0;
+  let firstFailure = "";
 
   for (let index = 0; index < candidates.length; index += 1) {
     const item = candidates[index];
@@ -237,6 +238,9 @@ async function backfillAiTags() {
     } catch (error) {
       console.error("AI tag backfill failed:", item.song.id, error);
       failed += 1;
+      if (!firstFailure) {
+        firstFailure = item.song.title + "：" + error.message;
+      }
     }
 
     await new Promise((resolve) => setTimeout(resolve, 900));
@@ -244,7 +248,8 @@ async function backfillAiTags() {
 
   button.disabled = false;
   $("#adminStatus").textContent =
-    "AIタグ付け完了：成功 " + succeeded + "曲、失敗 " + failed + "曲";
+    "AIタグ付け完了：成功 " + succeeded + "曲、失敗 " + failed + "曲" +
+    (firstFailure ? "｜最初のエラー：" + firstFailure : "");
   await loadSongs();
 }
 
