@@ -133,7 +133,7 @@ function routeUrl(view, songId = null) {
   const url = new URL(window.location.href);
   if (view === "home") url.searchParams.delete("view");
   else url.searchParams.set("view", view);
-  if (view === "listen" && songId) url.searchParams.set("song", String(songId));
+  if (["listen", "detail"].includes(view) && songId) url.searchParams.set("song", String(songId));
   else url.searchParams.delete("song");
   return url;
 }
