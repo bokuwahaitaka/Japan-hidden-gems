@@ -279,6 +279,40 @@ async function backfillAiTags() {
     (firstFailure ? "｜停止理由：" + firstFailure : "");
 }
 
+async function enrichSongMedia() {
+  const button = $("#enrichSongMedia");
+  if (!window.confirm("未補完の曲から20曲をYouTube公式APIで検索し、動画・ジャケット・アーティスト画像を保存します。続行しますか？")) return;
+
+  button.disabled = true;
+  $("#adminStatus").textContent = "YouTube・画像を補完中…（20曲で数十秒かかる場合があります）";
+
+  try {
+    const response = await fetch(SUPABASE_URL + "/functions/v1/enrich-song-media", {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: "Bearer " + accessToken,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ limit: 20 })
+    });
+    const result = await parseResponse(response);
+    await loadSongs();
+
+    const quotaNote = result.quotaStopped
+      ? "｜本日のYouTube検索上限に達しました。翌日、同じボタンで続きから再開できます。"
+      : "";
+    $("#adminStatus").textContent =
+      "メディア補完：処理 " + Number(result.processed || 0) +
+      "曲、登録 " + Number(result.updated || 0) +
+      "曲、要確認 " + Number(result.review || 0) + "曲" + quotaNote;
+  } catch (error) {
+    $("#adminStatus").textContent = "メディア補完に失敗しました：" + error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function toggleSong(button) {
   const songId = Number(button.dataset.id);
   const currentlyHidden = button.dataset.hidden === "true";
@@ -380,6 +414,7 @@ $("#songFilter").addEventListener("input", renderSongs);
 $("#visibilityFilter").addEventListener("change", renderSongs);
 $("#refreshSongs").addEventListener("click", loadSongs);
 $("#backfillTags").addEventListener("click", backfillAiTags);
+$("#enrichSongMedia").addEventListener("click", enrichSongMedia);
 $("#clearSeedMetrics").addEventListener("click", async () => {
   if (!window.confirm("初期参考スコアをすべて削除します。曲自体と本物の回答は残ります。続行しますか？")) return;
   const button = $("#clearSeedMetrics");
