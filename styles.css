@@ -1011,3 +1011,27 @@ h1,h2,h3,.brand,.rank,.stats strong{
   .genre-directory-grid{grid-template-columns:1fr}
   .genre-directory-card{min-height:150px}
 }
+
+
+/* J-POP Cup and suggestion box */
+.cup-setup{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:26px 0}
+.cup-setup .filter-field{min-width:190px}
+.cup-setup .select{width:100%}
+.cup-progress{margin:28px 0 14px;color:var(--accent);font-size:.78rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.cup-match{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:22px;align-items:center}
+.cup-song{overflow:hidden;background:var(--paper);border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow)}
+.cup-song>div:last-child{padding:22px}
+.cup-song h3,.cup-champion h3{margin:.15em 0;font-family:Georgia,"Yu Mincho",serif;font-size:clamp(1.5rem,3vw,2.5rem)}
+.cup-artwork{width:100%;aspect-ratio:1/1}
+.cup-vs{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:var(--ink);color:#fff;font-family:Georgia,serif;font-weight:900}
+.cup-champion{max-width:620px;margin:32px auto;text-align:center}
+.cup-champion-artwork{width:min(480px,100%);aspect-ratio:1/1;margin:0 auto 22px}
+.cup-champion .actions{justify-content:center}
+.feedback-form{display:grid;gap:20px;max-width:760px;margin-top:28px}
+.feedback-message{min-height:180px;resize:vertical;text-transform:none;line-height:1.6}
+.feedback-form .button{justify-self:start}
+@media(max-width:720px){
+  .cup-setup{display:grid;grid-template-columns:1fr}
+  .cup-match{grid-template-columns:1fr}
+  .cup-vs{margin:-7px auto;position:relative;z-index:2}
+}
