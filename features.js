@@ -650,3 +650,4 @@ document.querySelector("#languageSelect")?.addEventListener("change", () =>
 );
 
 installFeatureShell();
+renderView(routeFromLocation(), featureRouteParams());
