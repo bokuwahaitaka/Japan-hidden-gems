@@ -599,18 +599,42 @@ async function loadAll() {
     );
   }
 
-  const rows =
-    await rest(
-      "rpc/get_hidden_gem_data",
-      {
-        method: "POST",
-        authenticated: true,
-        body: JSON.stringify({})
-      }
+  const [rows, hiddenRows] =
+    await Promise.all([
+      rest(
+        "rpc/get_hidden_gem_data",
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({})
+        }
+      ),
+      rest(
+        "rpc/get_hidden_song_ids",
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({})
+        }
+      )
+    ]);
+
+  const hiddenSongIds =
+    new Set(
+      (hiddenRows ?? []).map(
+        (row) => Number(row.id)
+      )
     );
 
   songs =
-    (rows ?? []).map((row) => {
+    (rows ?? [])
+      .filter(
+        (row) =>
+          !hiddenSongIds.has(
+            Number(row.id)
+          )
+      )
+      .map((row) => {
       const recommendationTotal =
         Number(
           row.recommendation_total ?? 0
