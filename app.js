@@ -20,6 +20,7 @@ let songTagOptions = [];
 let selectedSongTag = null;
 let personalizedRecommendations = [];
 let favoriteSongIds = new Set();
+let notInterestedSongIds = new Set();
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -468,6 +469,7 @@ async function reloadForCurrentUser() {
   listenerProfile = null;
   selectedGenreIds = [];
   favoriteSongIds = new Set();
+  notInterestedSongIds = new Set();
   await loadListenerProfile();
   await loadDemographicOptions();
   await loadAll();
@@ -1070,8 +1072,14 @@ async function loadAll() {
     );
   }
 
-  const [rows, hiddenRows, tagRows, personalizedRows, favoriteRows] =
-    await Promise.all([
+  const [
+    rows,
+    hiddenRows,
+    tagRows,
+    personalizedRows,
+    favoriteRows,
+    feedbackRows
+  ] = await Promise.all([
       rest(
         "rpc/get_hidden_gem_data_segment",
         {
@@ -1113,11 +1121,21 @@ async function loadAll() {
           encodeURIComponent(currentUser.id) +
           "&order=created_at.desc",
         { authenticated: true }
+      ),
+      rest(
+        "personalization_feedback?select=song_id&user_id=eq." +
+          encodeURIComponent(currentUser.id) +
+          "&feedback=eq.not_interested",
+        { authenticated: true }
       )
     ]);
 
   favoriteSongIds = new Set(
     (favoriteRows ?? []).map((row) => Number(row.song_id))
+  );
+
+  notInterestedSongIds = new Set(
+    (feedbackRows ?? []).map((row) => Number(row.song_id))
   );
 
   const hiddenSongIds =
@@ -1437,6 +1455,22 @@ function favoriteButton(song) {
   `;
 }
 
+function notInterestedButton(song) {
+  const dismissed = notInterestedSongIds.has(Number(song.id));
+
+  return `
+    <button
+      class="action not-interested-action ${dismissed ? "selected" : ""}"
+      onclick="window.toggleNotInterested(${song.id})"
+      aria-pressed="${dismissed}"
+    >
+      ${dismissed
+        ? ui("Undo not interested", "興味なしを解除")
+        : ui("Not interested", "興味なし")}
+    </button>
+  `;
+}
+
 function renderFavorites() {
   if (!favoritesGrid) return;
 
@@ -1488,6 +1522,21 @@ async function toggleFavorite(songId) {
       );
       showStatus(ui("Removed from My Hidden Gems.", "お気に入りから削除しました。"));
     } else {
+      if (notInterestedSongIds.has(numericSongId)) {
+        await rest(
+          "personalization_feedback?user_id=eq." +
+            encodeURIComponent(currentUser.id) +
+            "&song_id=eq." +
+            encodeURIComponent(numericSongId) +
+            "&feedback=eq.not_interested",
+          {
+            method: "DELETE",
+            authenticated: true,
+            headers: { Prefer: "return=minimal" }
+          }
+        );
+      }
+
       await rest("favorite_songs", {
         method: "POST",
         authenticated: true,
@@ -1530,9 +1579,7 @@ function renderPersonalized() {
           </button>
           ${favoriteButton(song)}
           ${similarButton(song)}
-          <button class="action" onclick="window.dismissPersonalizedSong(${song.id})">
-            ${ui("Not interested", "興味なし")}
-          </button>
+          ${notInterestedButton(song)}
         </div>
       </article>
     `;
@@ -1546,14 +1593,54 @@ function renderPersonalized() {
   `;
 }
 
-async function dismissPersonalizedSong(songId) {
+async function toggleNotInterested(songId) {
+  const numericSongId = Number(songId);
+  const dismissed = notInterestedSongIds.has(numericSongId);
+
   try {
-    await rest("rpc/dismiss_personalized_song", {
-      method: "POST",
-      authenticated: true,
-      body: JSON.stringify({ p_song_id: Number(songId) })
-    });
-    showStatus(ui("Removed from your recommendations.", "おすすめから除外しました。"));
+    if (dismissed) {
+      await rest(
+        "personalization_feedback?user_id=eq." +
+          encodeURIComponent(currentUser.id) +
+          "&song_id=eq." +
+          encodeURIComponent(numericSongId) +
+          "&feedback=eq.not_interested",
+        {
+          method: "DELETE",
+          authenticated: true,
+          headers: { Prefer: "return=minimal" }
+        }
+      );
+      showStatus(ui(
+        "This song can appear in your recommendations again.",
+        "興味なしを解除しました。おすすめに再表示されます。"
+      ));
+    } else {
+      if (favoriteSongIds.has(numericSongId)) {
+        await rest(
+          "favorite_songs?user_id=eq." +
+            encodeURIComponent(currentUser.id) +
+            "&song_id=eq." +
+            encodeURIComponent(numericSongId),
+          {
+            method: "DELETE",
+            authenticated: true,
+            headers: { Prefer: "return=minimal" }
+          }
+        );
+      }
+
+      await rest("rpc/dismiss_personalized_song", {
+        method: "POST",
+        authenticated: true,
+        body: JSON.stringify({ p_song_id: numericSongId })
+      });
+      showStatus(ui(
+        "Removed from your recommendations.",
+        "おすすめから除外しました。"
+      ));
+    }
+
     await loadAll();
   } catch (error) {
     showStatus(error.message, "error", true);
@@ -1860,7 +1947,8 @@ function render() {
                   </button>
 
                   ${favoriteButton(song)}
-          ${similarButton(song)}
+                  ${similarButton(song)}
+                  ${notInterestedButton(song)}
 
                   <button
                     class="action"
@@ -2740,8 +2828,8 @@ window.openRating =
 window.reportSongTags =
   reportSongTags;
 
-window.dismissPersonalizedSong =
-  dismissPersonalizedSong;
+window.toggleNotInterested =
+  toggleNotInterested;
 
 window.toggleFavorite =
   toggleFavorite;
