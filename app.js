@@ -16,6 +16,8 @@ let selectedGenreIds = [];
 let demographicOptions = [];
 let selectedCountry = null;
 let selectedAgeBand = null;
+let songTagOptions = [];
+let selectedSongTag = null;
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -25,6 +27,7 @@ const ratingSections = $("#ratingSections");
 const statusBar = $("#statusBar");
 const countryFilter = $("#countryFilter");
 const ageFilter = $("#ageFilter");
+const songTagFilter = $("#songTagFilter");
 
 const SESSION_KEY = "jhg_supabase_session_v1";
 
@@ -93,6 +96,7 @@ function applyInterfaceLanguage(type = audience) {
     "#rankingTitle": ["Hidden Gem Index", "隠れた名曲ランキング"],
     "#countryFilterLabel": ["Country", "国別"],
     "#ageFilterLabel": ["Age band", "年齢別"],
+    "#songTagFilterLabel": ["Song tag", "曲のタグ"],
     "#rankingCopy": ["Hidden Gem Score = Japan Recommendation × (Overseas Rating ÷ 5) × (1 − Overseas Awareness).", "隠れた名曲スコア ＝ 日本での推薦率 ×（海外での評価 ÷ 5）×（1 − 海外での認知度）"],
     "#requestEyebrow": ["ADD A HIDDEN GEM", "曲を推薦"],
     "#requestTitle": ["Recommend a song to the world.", "海外の人に聴いてほしい曲を推薦しよう。"],
@@ -602,15 +606,28 @@ async function saveListenerProfile(event) {
 ========================= */
 
 async function loadDemographicOptions() {
-  demographicOptions =
-    await rest(
-      "rpc/get_demographic_filter_options",
-      {
-        method: "POST",
-        authenticated: true,
-        body: JSON.stringify({})
-      }
-    ) ?? [];
+  const [demographics, tags] =
+    await Promise.all([
+      rest(
+        "rpc/get_demographic_filter_options",
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({})
+        }
+      ),
+      rest(
+        "rpc/get_song_filter_tags",
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({})
+        }
+      )
+    ]);
+
+  demographicOptions = demographics ?? [];
+  songTagOptions = tags ?? [];
 
   renderDemographicOptions();
 }
@@ -676,6 +693,20 @@ function renderDemographicOptions() {
 
   ageFilter.value =
     selectedAgeBand ?? "";
+
+  if (songTagFilter) {
+    songTagFilter.innerHTML =
+      '<option value="">' +
+        ui("All tags", "すべてのタグ") +
+      "</option>" +
+      songTagOptions.map((tag) =>
+        '<option value="' + Number(tag.id) + '">' +
+        escapeHtml(ui(tag.label_en, tag.label_ja)) +
+        " · " + escapeHtml(ui(tag.category_en, tag.category_ja)) +
+        "</option>"
+      ).join("");
+    songTagFilter.value = selectedSongTag ?? "";
+  }
 }
 
 async function applyCountryFilter() {
@@ -686,6 +717,15 @@ async function applyCountryFilter() {
     selectedAgeBand = null;
     ageFilter.value = "";
   }
+
+  await loadAll();
+}
+
+async function applySongTagFilter() {
+  selectedSongTag =
+    songTagFilter.value
+      ? Number(songTagFilter.value)
+      : null;
 
   await loadAll();
 }
@@ -722,7 +762,8 @@ async function loadAll() {
           authenticated: true,
           body: JSON.stringify({
             p_country_code: selectedCountry,
-            p_age_band: selectedAgeBand
+            p_age_band: selectedAgeBand,
+            p_tag_id: selectedSongTag
           })
         }
       ),
@@ -1928,6 +1969,12 @@ function wireUi() {
     ?.addEventListener(
       "change",
       applyAgeFilter
+    );
+
+  songTagFilter
+    ?.addEventListener(
+      "change",
+      applySongTagFilter
     );
 
   sortSelect
