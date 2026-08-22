@@ -1247,6 +1247,13 @@ function render() {
                     }
                   </button>
 
+                  <button
+                    class="action"
+                    onclick="window.reportSongTags(${song.id})"
+                  >
+                    ${ui("Report tags", "タグの誤りを報告")}
+                  </button>
+
                 </div>
 
               </div>
@@ -1497,6 +1504,25 @@ function renderYoutubeCandidates(candidates) {
   });
 }
 
+async function autoTagSong(videoId) {
+  const response = await fetch(SUPABASE_URL + "/functions/v1/auto-tag-song", {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: "Bearer " + accessToken,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ videoId })
+  });
+  const text = await response.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  if (!response.ok) {
+    throw new Error(data?.error || data?.message || "Automatic tagging failed.");
+  }
+  return data;
+}
+
 async function addYoutubeCandidate(button) {
   const videoId = button.dataset.videoId;
   const title = button.dataset.title;
@@ -1518,9 +1544,23 @@ async function addYoutubeCandidate(button) {
         p_video_id: videoId
       })
     });
+    let taggingFailed = false;
+    try {
+      await autoTagSong(videoId);
+    } catch (tagError) {
+      taggingFailed = true;
+      console.warn("Automatic tagging failed:", tagError);
+    }
+
     $("#songSearchTitle").value = "";
     $("#youtubeCandidates").innerHTML = "";
-    showStatus("曲をランキングに追加しました。");
+    showStatus(
+      taggingFailed
+        ? "曲を追加しました。AIタグ付けは後で再試行できます。"
+        : "曲を追加し、AIタグを自動設定しました。",
+      taggingFailed ? "error" : "success"
+    );
+    await loadDemographicOptions();
     await loadAll();
     $("#ranking")?.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) {
@@ -1528,6 +1568,31 @@ async function addYoutubeCandidate(button) {
     note.textContent = error.message;
     button.disabled = false;
     button.textContent = "この動画を選ぶ";
+  }
+}
+
+async function reportSongTags(songId) {
+  const message = window.prompt(
+    ui(
+      "What is wrong or missing from this song's tags?",
+      "この曲のタグについて、間違いまたは不足している内容を入力してください。"
+    )
+  );
+  if (!message) return;
+
+  try {
+    await rest("rpc/submit_song_tag_report", {
+      method: "POST",
+      authenticated: true,
+      body: JSON.stringify({
+        p_song_id: Number(songId),
+        p_report_type: "other",
+        p_message: message.trim()
+      })
+    });
+    showStatus(ui("Report sent. Thank you.", "報告を送信しました。"));
+  } catch (error) {
+    showStatus(error.message, "error", true);
   }
 }
 
@@ -1996,6 +2061,9 @@ window.submitRating =
 
 window.openRating =
   openRating;
+
+window.reportSongTags =
+  reportSongTags;
 
 /* =========================
    START
