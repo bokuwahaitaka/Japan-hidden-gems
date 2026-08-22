@@ -34,6 +34,8 @@ const personalizedGrid = $("#personalizedGrid");
 const favoritesGrid = $("#favoritesGrid");
 
 const SESSION_KEY = "jhg_supabase_session_v1";
+const PENDING_ACCOUNT_KEY = "jhg_pending_account_email_v1";
+const PENDING_PASSWORD_KEY = "jhg_pending_account_password_v1";
 
 /* =========================
    GENERAL
@@ -125,6 +127,10 @@ function applyInterfaceLanguage(type = audience) {
     "#signInButton": ["Log in", "ログイン"],
     "#createAccountButton": ["Create account", "新規登録"],
     "#authGuestNote": ["Anonymous use stays available. Creating an account keeps the current browser’s favorites and responses.", "匿名利用も継続できます。新規登録すると、このブラウザのお気に入りと回答をそのまま引き継ぎます。"],
+    "#authFinishCopy": ["Email confirmed. Set a password to finish creating your account.", "メール確認が完了しました。パスワードを設定すると登録完了です。"],
+    "#finishPasswordLabel": ["New password", "新しいパスワード"],
+    "#finishPasswordHint": ["Use at least 8 characters.", "8文字以上で入力してください。"],
+    "#finishAccountButton": ["Finish account", "登録を完了"],
     "#authSignedInLabel": ["Signed in as", "ログイン中"],
     "#signOutButton": ["Log out", "ログアウト"]
   };
@@ -400,6 +406,11 @@ function consumeAuthCallback() {
     expires_in: Number(params.get("expires_in") || 3600)
   });
 
+  if (params.get("type") === "email_change" || localStorage.getItem(PENDING_ACCOUNT_KEY)) {
+    localStorage.setItem(PENDING_PASSWORD_KEY, "true");
+    localStorage.removeItem(PENDING_ACCOUNT_KEY);
+  }
+
   history.replaceState(null, "", window.location.pathname + window.location.search);
   return true;
 }
@@ -409,8 +420,13 @@ function isMemberAccount() {
 }
 
 function syncAccountUi() {
-  const member = isMemberAccount();
-  $("#authGuestPanel")?.classList.toggle("hidden", member);
+  const needsPassword =
+    localStorage.getItem(PENDING_PASSWORD_KEY) === "true" &&
+    Boolean(currentUser?.email);
+  const member = isMemberAccount() && !needsPassword;
+
+  $("#authGuestPanel")?.classList.toggle("hidden", member || needsPassword);
+  $("#authFinishPanel")?.classList.toggle("hidden", !needsPassword);
   $("#authMemberPanel")?.classList.toggle("hidden", !member);
 
   const email = $("#accountEmail");
@@ -478,26 +494,63 @@ async function createMemberAccount() {
 
   await withBusy(async () => {
     try {
+      await authRequest(
+        "user?redirect_to=" + encodeURIComponent(window.location.origin + window.location.pathname),
+        {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({
+            email,
+            data: { account_created_from: "japan-hidden-gems" }
+          })
+        }
+      );
+
+      localStorage.setItem(PENDING_ACCOUNT_KEY, email);
+      syncAccountUi();
+      showStatus(ui("Confirmation email sent. Open its link, then set your password.", "確認メールを送信しました。リンクを開いた後、パスワードを設定してください。"), "success", true);
+      error.textContent = ui("Check your inbox. You will set the password after confirming your email.", "受信箱を確認してください。メール確認後にパスワードを設定します。");
+    } catch (signupError) {
+      console.error(signupError);
+      error.textContent = ui("Could not create the account: ", "新規登録できませんでした：") + signupError.message;
+    }
+  });
+}
+
+
+async function finishMemberAccount(event) {
+  event.preventDefault();
+
+  const password = $("#finishPassword").value;
+  const error = $("#finishAccountError");
+  error.textContent = "";
+
+  if (password.length < 8) {
+    error.textContent = ui("Use at least 8 characters.", "8文字以上で入力してください。");
+    return;
+  }
+
+  await withBusy(async () => {
+    try {
       const user = await authRequest("user", {
         method: "PUT",
         headers: { Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({
-          email,
-          password,
-          data: { account_created_from: "japan-hidden-gems" }
-        })
+        body: JSON.stringify({ password })
       });
 
       currentUser = user;
       const stored = readSession();
       if (stored) saveSession({ ...stored, user });
 
+      localStorage.removeItem(PENDING_ACCOUNT_KEY);
+      localStorage.removeItem(PENDING_PASSWORD_KEY);
       syncAccountUi();
-      showStatus(ui("Confirmation email sent. Open it to finish creating your account.", "確認メールを送信しました。メール内のリンクを開くと登録完了です。"), "success", true);
-      error.textContent = ui("Check your inbox and open the confirmation link.", "受信箱を確認し、確認リンクを開いてください。");
-    } catch (signupError) {
-      console.error(signupError);
-      error.textContent = ui("Could not create the account: ", "新規登録できませんでした：") + signupError.message;
+      await reloadForCurrentUser();
+      $("#authDialog")?.close();
+      showStatus(ui("Account created. Your saved songs are now synced.", "登録が完了しました。お気に入りを同期しました。"), "success");
+    } catch (finishError) {
+      console.error(finishError);
+      error.textContent = ui("Could not set the password: ", "パスワードを設定できませんでした：") + finishError.message;
     }
   });
 }
@@ -2393,6 +2446,12 @@ function wireUi() {
     ?.addEventListener(
       "click",
       createMemberAccount
+    );
+
+  $("#finishAccountForm")
+    ?.addEventListener(
+      "submit",
+      finishMemberAccount
     );
 
   $("#signOutButton")
