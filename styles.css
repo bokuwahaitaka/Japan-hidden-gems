@@ -779,13 +779,32 @@ footer{border-top:8px solid var(--accent)}
   display:flex;min-height:140px;flex-direction:column;justify-content:flex-end;align-items:flex-start;
   border:1px solid var(--line);border-radius:2px;padding:20px;background:var(--paper);text-align:left
 }
+.artist-index-card{
+  min-height:112px;display:grid;grid-template-columns:76px minmax(0,1fr);
+  align-items:center;justify-content:stretch;gap:18px
+}
 .artist-index-card:hover,.playlist-index-card:hover{border-color:var(--accent);transform:translateY(-2px)}
 .artist-index-card strong,.playlist-index-card strong{font-family:Georgia,"Yu Mincho",serif;font-size:1.45rem}
-.artist-index-card span,.playlist-index-card small{margin-top:8px;color:var(--muted)}
+.artist-index-card span,.playlist-index-card small{color:var(--muted)}
+.artist-index-copy{display:grid;min-width:0}
+.artist-index-copy strong{color:var(--ink);overflow-wrap:anywhere}
+.artist-index-copy>span{margin-top:8px}
+.artist-directory-image{
+  position:relative;display:grid;place-items:center;overflow:hidden;flex:0 0 auto;
+  border:1px solid var(--line);border-radius:50%;background:#171717;color:#fff;
+  font-family:Georgia,"Yu Mincho",serif;font-weight:700
+}
+.artist-directory-image--card{width:76px;height:76px;font-size:1.75rem}
+.artist-directory-image--profile{width:132px;height:132px;font-size:3rem}
+.artist-directory-image img{position:relative;z-index:2;width:100%;height:100%;object-fit:cover}
+.artist-directory-image--artwork img{filter:saturate(.82)}
+.artist-directory-image-fallback{position:absolute;inset:0;display:grid;place-items:center;color:#fff}
+.artist-directory-image--failed .artist-directory-image-fallback{z-index:3}
 .artist-profile-head,.playlist-detail-head{
-  display:flex;justify-content:space-between;gap:24px;align-items:end;
+  display:flex;justify-content:flex-start;gap:24px;align-items:center;
   margin:28px 0;border-bottom:1px solid var(--line);padding-bottom:20px
 }
+.artist-profile-copy{min-width:0}
 .artist-profile-head h3,.playlist-detail-head h3{font-family:Georgia,"Yu Mincho",serif;font-size:clamp(2.5rem,5vw,5rem);margin:.1em 0}
 .feature-create-form{display:grid;grid-template-columns:minmax(0,420px) auto;gap:10px;margin:26px 0 36px}
 .feature-create-form .text-input{text-transform:none}
