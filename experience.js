@@ -221,7 +221,7 @@ function shuffled(items) {
 async function startCup() {
   const mode=document.querySelector("#cupMode")?.value || "random";
   const tagId=mode==="tag"?Number(document.querySelector("#cupTag")?.value):null;
-  let eligible=songs.filter(s=>s.youtube_url || s.youtube_video_id);
+  let eligible=[...songs];
   if(tagId) eligible=eligible.filter(s=>(s.tags||[]).some(t=>Number(t.id)===tagId));
   const status=document.querySelector("#cupStatus");
   if(eligible.length<8){if(status) status.textContent=experienceText("needSongs");return;}
