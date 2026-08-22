@@ -111,6 +111,8 @@ const EXPERIENCE_STATIC = {
   "#genresTitle": { ko:"취향에 맞는 사운드를 찾으세요.", zh:"找到你的声音。", ru:"Найдите своё звучание.", es:"Encuentra tu sonido.", fr:"Trouvez votre son." }
 };
 
+VALID_VIEWS.add("cup");
+VALID_VIEWS.add("feedback");
 let cupState = null;
 
 function experienceText(key) {
