@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Japan Hidden Gems</title>
   <meta name="description" content="Discover Japanese songs loved in Japan but still under-discovered overseas." />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body>
   <header class="site-header">
@@ -45,7 +45,21 @@
 
     <section class="shell section" id="ranking">
       <div class="section-head"><div><p id="rankingEyebrow" class="eyebrow dark">DISCOVERY GAP RANKING</p><h2 id="rankingTitle">Hidden Gem Index</h2></div>
-        <select id="sortSelect" class="select" aria-label="Sort ranking"><option value="score">Highest Hidden Gem Score</option><option value="japan">Highest Japan Recommendation</option><option value="awareness">Lowest Overseas Awareness</option><option value="rating">Highest Overseas Rating</option></select>
+        <div class="ranking-controls">
+          <label class="filter-field">
+            <span id="countryFilterLabel">Country</span>
+            <select id="countryFilter" class="select" aria-label="Filter by country">
+              <option value="">All countries</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span id="ageFilterLabel">Age band</span>
+            <select id="ageFilter" class="select" aria-label="Filter by age band">
+              <option value="">All ages</option>
+            </select>
+          </label>
+          <select id="sortSelect" class="select" aria-label="Sort ranking"><option value="score">Highest Hidden Gem Score</option><option value="japan">Highest Japan Recommendation</option><option value="awareness">Lowest Overseas Awareness</option><option value="rating">Highest Overseas Rating</option></select>
+        </div>
       </div>
       <p id="rankingCopy" class="section-copy">Hidden Gem Score = Japan Recommendation × (Overseas Rating ÷ 5) × (1 − Overseas Awareness).</p>
       <div id="cards" class="cards"><p class="muted">Loading songs…</p></div>
@@ -65,7 +79,7 @@
   <footer><div class="shell footer-inner"><div class="brand">JAPAN HIDDEN GEMS</div><p>Prototype — no copyrighted audio or artwork is hosted here.</p></div></footer>
 
 <script src="jwt-retry.js?v=1"></script>
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 <script src="performance.js?v=2"></script>
 </body>
 </html>
