@@ -283,12 +283,41 @@ begin
 end;
 $$;
 
+create or replace function public.get_public_song_tags()
+returns table (
+  song_id bigint,
+  tags jsonb
+)
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $
+  select
+    a.song_id,
+    jsonb_agg(
+      jsonb_build_object(
+        'id', t.id,
+        'category', t.category,
+        'label_en', t.label_en,
+        'label_ja', t.label_ja
+      )
+      order by t.sort_order
+    ) as tags
+  from public.song_tag_assignments a
+  join public.song_tags t on t.id = a.tag_id and t.is_active
+  join public.songs s on s.id = a.song_id and s.is_hidden = false
+  group by a.song_id;
+$;
+
+revoke all on function public.get_public_song_tags() from public;
 revoke all on function public.submit_song_tag_report(bigint, text, text) from public;
 revoke all on function public.save_ai_song_tags(bigint, jsonb, text) from public;
 revoke all on function public.mark_ai_tag_failure(bigint, text) from public;
 revoke all on function public.admin_list_tag_reports() from public;
 revoke all on function public.admin_set_tag_report_status(bigint, text) from public;
 
+grant execute on function public.get_public_song_tags() to authenticated;
 grant execute on function public.submit_song_tag_report(bigint, text, text) to authenticated;
 grant execute on function public.save_ai_song_tags(bigint, jsonb, text) to service_role;
 grant execute on function public.mark_ai_tag_failure(bigint, text) to service_role;
