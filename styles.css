@@ -313,3 +313,5 @@ body:not([data-audience="japan"]) .japan-only{display:none!important}
   .header-actions{width:100%;overflow-x:auto;padding-bottom:4px}
   .header-actions .button{white-space:nowrap}
 }
+
+.auth-help-button{justify-self:start;padding-top:0}
