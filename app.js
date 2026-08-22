@@ -18,6 +18,7 @@ let selectedCountry = null;
 let selectedAgeBand = null;
 let songTagOptions = [];
 let selectedSongTag = null;
+let personalizedRecommendations = [];
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -28,6 +29,7 @@ const statusBar = $("#statusBar");
 const countryFilter = $("#countryFilter");
 const ageFilter = $("#ageFilter");
 const songTagFilter = $("#songTagFilter");
+const personalizedGrid = $("#personalizedGrid");
 
 const SESSION_KEY = "jhg_supabase_session_v1";
 
@@ -92,6 +94,9 @@ function applyInterfaceLanguage(type = audience) {
     "#songCountLabel": ["songs", "曲"],
     "#japanVoteLabel": ["Japan votes", "日本からの投票"],
     "#overseasResponseLabel": ["overseas responses", "海外からの回答"],
+    "#personalizedEyebrow": ["FOR YOU", "あなたへのおすすめ"],
+    "#personalizedTitle": ["Songs picked for you", "あなたに合いそうな曲"],
+    "#personalizedCopy": ["Based on your favorite genres, recommendations, ratings, and song tags.", "好きなジャンル・推薦・評価・曲タグをもとに選んでいます。"],
     "#rankingEyebrow": ["DISCOVERY GAP RANKING", "海外との認知ギャップランキング"],
     "#rankingTitle": ["Hidden Gem Index", "隠れた名曲ランキング"],
     "#countryFilterLabel": ["Country", "国別"],
@@ -753,7 +758,7 @@ async function loadAll() {
     );
   }
 
-  const [rows, hiddenRows, tagRows] =
+  const [rows, hiddenRows, tagRows, personalizedRows] =
     await Promise.all([
       rest(
         "rpc/get_hidden_gem_data_segment",
@@ -781,6 +786,14 @@ async function loadAll() {
           method: "POST",
           authenticated: true,
           body: JSON.stringify({})
+        }
+      ),
+      rest(
+        "rpc/get_personalized_recommendations",
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({ p_limit: 5 })
         }
       )
     ]);
@@ -941,8 +954,26 @@ async function loadAll() {
       };
     });
 
+  const songsById = new Map(
+    songs.map((song) => [Number(song.id), song])
+  );
+
+  personalizedRecommendations = (personalizedRows ?? [])
+    .map((row) => {
+      const song = songsById.get(Number(row.song_id));
+      return song
+        ? {
+            ...song,
+            recommendationScore: Number(row.recommendation_score ?? 0),
+            reasonTags: Array.isArray(row.reason_tags) ? row.reason_tags : []
+          }
+        : null;
+    })
+    .filter(Boolean);
+
   renderStats();
   render();
+  renderPersonalized();
 }
 
 /* =========================
@@ -974,6 +1005,58 @@ function renderStats() {
 
   $("#overseasResponseCount").textContent =
     overseasResponses;
+}
+
+function renderPersonalized() {
+  if (!personalizedGrid) return;
+
+  personalizedGrid.innerHTML = personalizedRecommendations.map((song) => {
+    const reasons = song.reasonTags
+      .map((tag) => escapeHtml(ui(tag.label_en, tag.label_ja)))
+      .join(" · ");
+
+    return `
+      <article class="personalized-card">
+        <p class="personalized-score">${Math.round(song.recommendationScore)}% MATCH</p>
+        <h3>${escapeHtml(song.title)}</h3>
+        <p class="meta">${escapeHtml(song.artist)}</p>
+        <p class="personalized-reason">
+          ${reasons
+            ? ui("Because you like ", "おすすめ理由：") + reasons
+            : ui("Selected from the Hidden Gem ranking", "隠れた名曲スコアから選出")}
+        </p>
+        <div class="actions">
+          <button class="action primary" onclick="window.openRating(${song.id})">
+            ${ui("Listen", "聴いてみる")}
+          </button>
+          <button class="action" onclick="window.dismissPersonalizedSong(${song.id})">
+            ${ui("Not interested", "興味なし")}
+          </button>
+        </div>
+      </article>
+    `;
+  }).join("") || `
+    <p class="muted">
+      ${ui(
+        "Rate or recommend a few songs to improve your picks.",
+        "曲を推薦・評価すると、おすすめが表示されます。"
+      )}
+    </p>
+  `;
+}
+
+async function dismissPersonalizedSong(songId) {
+  try {
+    await rest("rpc/dismiss_personalized_song", {
+      method: "POST",
+      authenticated: true,
+      body: JSON.stringify({ p_song_id: Number(songId) })
+    });
+    showStatus(ui("Removed from your recommendations.", "おすすめから除外しました。"));
+    await loadAll();
+  } catch (error) {
+    showStatus(error.message, "error", true);
+  }
 }
 
 /* =========================
@@ -2092,6 +2175,9 @@ window.openRating =
 
 window.reportSongTags =
   reportSongTags;
+
+window.dismissPersonalizedSong =
+  dismissPersonalizedSong;
 
 /* =========================
    START
