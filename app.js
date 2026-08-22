@@ -1080,6 +1080,7 @@ function renderRatingSections(
 
                       <iframe
                         src="${embed}"
+                        loading="lazy"
                         title="${
                           escapeHtml(
                             song.title
