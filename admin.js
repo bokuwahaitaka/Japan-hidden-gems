@@ -4,6 +4,7 @@ const SESSION_KEY = "jhg_admin_session_v1";
 
 let accessToken = null;
 let adminSongs = [];
+let adminTags = [];
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -67,7 +68,12 @@ function showAdmin() {
 async function loadSongs() {
   $("#adminStatus").textContent = "読み込み中…";
   try {
-    adminSongs = await rpc("admin_list_songs");
+    const [songs, tags] = await Promise.all([
+      rpc("admin_list_songs_v2"),
+      rpc("admin_list_song_tags")
+    ]);
+    adminSongs = songs ?? [];
+    adminTags = tags ?? [];
     renderSongs();
     $("#adminStatus").textContent = adminSongs.length + "曲";
   } catch (error) {
@@ -103,6 +109,19 @@ function renderSongs() {
         </button>
         <button class="danger" type="button" data-action="delete" data-id="${song.id}">完全削除</button>
       </div>
+      <details class="tag-editor">
+        <summary>タグを編集</summary>
+        <div class="admin-tag-grid">
+          ${adminTags.map((tag) => `
+            <label>
+              <input type="checkbox" name="songTag" value="${tag.id}"
+                ${(song.tag_ids || []).map(Number).includes(Number(tag.id)) ? "checked" : ""}>
+              <span>${escapeHtml(tag.label_ja)} <small>${escapeHtml(tag.category_ja)}</small></span>
+            </label>
+          `).join("")}
+        </div>
+        <button type="button" data-action="tags" data-id="${song.id}">タグを保存</button>
+      </details>
     </article>
   `).join("") || '<p class="empty">該当する曲がありません。</p>';
 }
@@ -113,6 +132,24 @@ async function toggleSong(button) {
   button.disabled = true;
   try {
     await rpc("admin_set_song_hidden", { p_song_id: songId, p_hidden: !currentlyHidden });
+    await loadSongs();
+  } catch (error) {
+    $("#adminStatus").textContent = error.message;
+    button.disabled = false;
+  }
+}
+
+async function saveSongTags(button) {
+  const row = button.closest(".song-row");
+  const tagIds = [...row.querySelectorAll('input[name="songTag"]:checked')]
+    .map((input) => Number(input.value));
+
+  button.disabled = true;
+  try {
+    await rpc("admin_set_song_tags", {
+      p_song_id: Number(button.dataset.id),
+      p_tag_ids: tagIds
+    });
     await loadSongs();
   } catch (error) {
     $("#adminStatus").textContent = error.message;
@@ -151,6 +188,7 @@ $("#adminSongs").addEventListener("click", (event) => {
   if (!button) return;
   if (button.dataset.action === "toggle") toggleSong(button);
   if (button.dataset.action === "delete") openDelete(Number(button.dataset.id));
+  if (button.dataset.action === "tags") saveSongTags(button);
 });
 
 $("#deleteForm").addEventListener("submit", async (event) => {
