@@ -17,6 +17,7 @@ let demographicOptions = [];
 let selectedCountry = null;
 let selectedAgeBand = null;
 let songTagOptions = [];
+let genreDirectory = [];
 let selectedSongTag = null;
 let personalizedRecommendations = [];
 let favoriteSongIds = new Set();
@@ -37,6 +38,7 @@ const songTagFilter = $("#songTagFilter");
 const personalizedGrid = $("#personalizedGrid");
 const favoritesGrid = $("#favoritesGrid");
 const similarSongsGrid = $("#similarSongsGrid");
+const genreDirectoryGrid = $("#genreDirectoryGrid");
 
 const SESSION_KEY = "jhg_supabase_session_v1";
 const PENDING_ACCOUNT_KEY = "jhg_pending_account_email_v1";
@@ -117,7 +119,7 @@ function setText(selector, value) {
   if (element) element.textContent = value;
 }
 
-const VALID_VIEWS = new Set(["home", "ranking", "personalized", "favorites", "request", "listen", "detail", "discover", "artists", "playlists", "history"]);
+const VALID_VIEWS = new Set(["home", "ranking", "genres", "personalized", "favorites", "request", "listen", "detail", "discover", "artists", "playlists", "history"]);
 
 function routeFromLocation() {
   const requested = new URLSearchParams(window.location.search).get("view");
@@ -217,6 +219,10 @@ function applyInterfaceLanguage(language = interfaceLanguage || (audience === "j
     "#footerCopy": ["Prototype — no copyrighted audio or artwork is hosted here.", "試作版 — 著作権のある音源や画像はこのサイト上に保存していません。"],
     "#homeNavLabel": ["Home", "ホーム"],
     "#rankingNavLabel": ["Ranking", "ランキング"],
+    "#genresNavLabel": ["Genres", "ジャンル"],
+    "#genresEyebrow": ["BROWSE BY GENRE", "ジャンルから探す"],
+    "#genresTitle": ["Find your sound.", "好きな音から探そう。"],
+    "#genresCopy": ["Choose a genre to open its ranking.", "ジャンルを選ぶと、そのジャンルのランキングを表示します。"],
     "#personalizedNavLabel": ["For You", "おすすめ"],
     "#requestNavLabel": ["Recommend", "曲を推薦"],
     "#listenBackBtn": ["← Back", "← 戻る"],
@@ -345,13 +351,30 @@ function youtubeThumbnailUrl(url) {
 }
 
 function songArtwork(song, extraClass = "") {
-  const thumbnail = youtubeThumbnailUrl(song?.youtube_url);
+  const thumbnail = song?.youtube_thumbnail_url || youtubeThumbnailUrl(song?.youtube_url);
   const classes = ["song-artwork", extraClass].filter(Boolean).join(" ");
   const title = escapeHtml(songTitle(song));
 
   return thumbnail
     ? `<div class="${classes}"><img src="${thumbnail}" alt="" loading="lazy" decoding="async"><span class="artwork-play" aria-hidden="true">▶</span></div>`
     : `<div class="${classes} artwork-fallback" aria-label="${title}"><span>JHG</span></div>`;
+}
+
+function artistIdentity(song) {
+  const artist = escapeHtml(songArtist(song));
+  const image = song?.artist_image_url
+    ? `<img src="${escapeHtml(song.artist_image_url)}" alt="" loading="lazy" decoding="async">`
+    : `<span aria-hidden="true">${artist.slice(0, 1) || "J"}</span>`;
+
+  return `
+    <div class="artist-identity">
+      <span class="artist-avatar">${image}</span>
+      <span>
+        <strong>${artist}</strong>
+        ${song.year ? `<small>${escapeHtml(song.year)}</small>` : ""}
+      </span>
+    </div>
+  `;
 }
 
 /* =========================
@@ -1115,7 +1138,7 @@ async function saveListenerProfile(event) {
 ========================= */
 
 async function loadDemographicOptions() {
-  const [demographics, tags] =
+  const [demographics, tags, genres] =
     await Promise.all([
       rest(
         "rpc/get_demographic_filter_options",
@@ -1132,11 +1155,20 @@ async function loadDemographicOptions() {
           authenticated: true,
           body: JSON.stringify({})
         }
+      ),
+      rest(
+        "rpc/get_genre_directory",
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({})
+        }
       )
     ]);
 
   demographicOptions = demographics ?? [];
   songTagOptions = tags ?? [];
+  genreDirectory = genres ?? [];
 
   renderDemographicOptions();
 }
@@ -1218,6 +1250,25 @@ function renderDemographicOptions() {
   }
 }
 
+function renderGenreDirectory() {
+  if (!genreDirectoryGrid) return;
+
+  genreDirectoryGrid.innerHTML = genreDirectory.map((genre) => `
+    <button class="genre-directory-card" type="button" onclick="window.openGenre(${Number(genre.id)})">
+      <span class="genre-directory-count">${Number(genre.song_count || 0)}</span>
+      <strong>${escapeHtml(ui(genre.label_en, genre.label_ja))}</strong>
+      <span>${ui("Open ranking", "ランキングを見る")} →</span>
+    </button>
+  `).join("") || `<p class="muted">${ui("Genres are being prepared.", "ジャンルを準備中です。")}</p>`;
+}
+
+async function openGenre(tagId) {
+  selectedSongTag = Number(tagId) || null;
+  if (songTagFilter) songTagFilter.value = selectedSongTag ?? "";
+  await loadAll();
+  navigateTo("ranking");
+}
+
 async function applyCountryFilter() {
   selectedCountry =
     countryFilter.value || null;
@@ -1284,7 +1335,7 @@ async function loadAll() {
         }
       ),
       rest(
-        "songs?select=id,title_en,artist_en",
+        "songs?select=id,title_en,artist_en,youtube_url,youtube_video_id,youtube_thumbnail_url,youtube_channel_id,artist_image_url,media_enrichment_status",
         { authenticated: true }
       ),
       rest(
@@ -1336,7 +1387,16 @@ async function loadAll() {
   const englishMetadata = new Map(
     (titleRows ?? []).map((row) => [
       Number(row.id),
-      { title_en: row.title_en, artist_en: row.artist_en }
+      {
+        title_en: row.title_en,
+        artist_en: row.artist_en,
+        youtube_url: row.youtube_url,
+        youtube_video_id: row.youtube_video_id,
+        youtube_thumbnail_url: row.youtube_thumbnail_url,
+        youtube_channel_id: row.youtube_channel_id,
+        artist_image_url: row.artist_image_url,
+        media_enrichment_status: row.media_enrichment_status
+      }
     ])
   );
 
@@ -1482,7 +1542,22 @@ async function loadAll() {
           row.year,
 
         youtube_url:
-          row.youtube_url,
+          englishMetadata.get(Number(row.id))?.youtube_url ?? row.youtube_url,
+
+        youtube_video_id:
+          englishMetadata.get(Number(row.id))?.youtube_video_id ?? null,
+
+        youtube_thumbnail_url:
+          englishMetadata.get(Number(row.id))?.youtube_thumbnail_url ?? null,
+
+        youtube_channel_id:
+          englishMetadata.get(Number(row.id))?.youtube_channel_id ?? null,
+
+        artist_image_url:
+          englishMetadata.get(Number(row.id))?.artist_image_url ?? null,
+
+        media_enrichment_status:
+          englishMetadata.get(Number(row.id))?.media_enrichment_status ?? "pending",
 
         tags:
           tagsBySong.get(Number(row.id)) ?? [],
@@ -1527,6 +1602,7 @@ async function loadAll() {
   render();
   renderPersonalized();
   renderFavorites();
+  renderGenreDirectory();
 }
 
 /* =========================
@@ -2021,20 +2097,15 @@ function render() {
               : " / 100";
 
           return `
-            <article class="card">
-
-              <div class="rank">
-                ${
-                  String(
-                    index + 1
-                  ).padStart(
-                    2,
-                    "0"
-                  )
-                }
+            <article class="card editorial-ranking-card">
+              <div class="ranking-artwork-wrap">
+                ${songArtwork(song, "ranking-artwork")}
+                <div class="rank">${String(index + 1).padStart(2, "0")}</div>
+                <div class="artwork-score">
+                  <strong>${scoreText}</strong><span>${scoreSuffix}</span>
+                </div>
               </div>
-
-              <div>
+              <div class="ranking-card-body">
 
                 <h3>
                   ${
@@ -2044,10 +2115,7 @@ function render() {
                   }
                 </h3>
 
-                <div class="meta">
-                  ${escapeHtml(songArtist(song))}
-                  ${song.year ? " · " + escapeHtml(song.year) : ""}
-                </div>
+                ${artistIdentity(song)}
 
                 ${song.seedBaseline ? `<div class="seed-score-badge">${ui("REFERENCE SCORE", "初期参考スコア")}</div>` : ""}
 
@@ -3063,6 +3131,9 @@ window.toggleFavorite =
 
 window.openSimilarSongs =
   openSimilarSongs;
+
+window.openGenre =
+  openGenre;
 
 /* =========================
    START
