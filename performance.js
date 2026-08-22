@@ -27,9 +27,9 @@ function performanceCard(song, index) {
     <article class="card">
       <div class="rank">${String(index + 1).padStart(2, "0")}</div>
       <div>
-        <h3>${escapeHtml(song.title)}</h3>
+        <h3>${escapeHtml(songTitle(song))}</h3>
         <div class="meta">
-          ${escapeHtml(song.artist)}
+          ${escapeHtml(songArtist(song))}
           ${song.year ? " · " + escapeHtml(song.year) : ""}
         </div>
 
@@ -82,7 +82,7 @@ function performanceRatingSection(song) {
   return `
     <section class="rating-section" data-song-id="${song.id}">
       <div class="rating-inner">
-        <p class="eyebrow dark">RATE ${escapeHtml(song.title)}</p>
+        <p class="eyebrow dark">RATE ${escapeHtml(songTitle(song))}</p>
         <h2>Have you heard this song before?</h2>
 
         ${embed ? `
@@ -90,7 +90,7 @@ function performanceRatingSection(song) {
             <iframe
               src="${embed}"
               loading="lazy"
-              title="${escapeHtml(song.title)}"
+              title="${escapeHtml(songTitle(song))}"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowfullscreen
             ></iframe>
@@ -169,9 +169,7 @@ openRating = function (songId) {
   if (!song) return;
 
   ratingSections.innerHTML = performanceRatingSection(song);
-  ratingSections
-    .querySelector(`[data-song-id="${songId}"]`)
-    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  navigateTo("listen", { songId });
 };
 
 window.openRating = openRating;
