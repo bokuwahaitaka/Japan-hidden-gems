@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Japan Hidden Gems</title>
   <meta name="description" content="Discover Japanese songs loved in Japan but still under-discovered overseas." />
-  <link rel="stylesheet" href="styles.css?v=9" />
+  <link rel="stylesheet" href="styles.css?v=10" />
 </head>
 <body>
   <header class="site-header">
@@ -41,6 +41,17 @@
       <p id="requestCopy" class="section-copy">Enter a song title, choose the correct video from three YouTube results, and add it to the ranking immediately.</p>
       <form id="songRequestForm" class="song-request-form"><label class="form-field" for="songSearchTitle"><span id="songSearchLabel">Song title</span><input id="songSearchTitle" class="text-input song-url-input" type="search" minlength="2" maxlength="100" autocomplete="off" placeholder="e.g. Plastic Love" required /></label><button id="songSearchSubmit" class="button profile-submit" type="submit">Search</button></form>
       <p id="songRequestNote" class="form-error" aria-live="polite"></p><div id="youtubeCandidates" class="youtube-candidates"></div><p id="requestLimitCopy" class="sample-note">Check the title and channel before choosing a video.</p>
+    </section>
+
+    <section class="shell section personalized-section" id="personalized">
+      <div class="section-head">
+        <div>
+          <p id="personalizedEyebrow" class="eyebrow dark">FOR YOU</p>
+          <h2 id="personalizedTitle">Songs picked for you</h2>
+        </div>
+      </div>
+      <p id="personalizedCopy" class="section-copy">Based on your favorite genres, recommendations, ratings, and song tags.</p>
+      <div id="personalizedGrid" class="personalized-grid"></div>
     </section>
 
     <section class="shell section" id="ranking">
@@ -85,7 +96,7 @@
   <footer><div class="shell footer-inner"><div class="brand">JAPAN HIDDEN GEMS</div><p>Prototype — no copyrighted audio or artwork is hosted here.</p></div></footer>
 
 <script src="jwt-retry.js?v=1"></script>
-<script src="app.js?v=14"></script>
+<script src="app.js?v=15"></script>
 <script src="performance.js?v=2"></script>
 </body>
 </html>
