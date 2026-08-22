@@ -224,8 +224,8 @@ function applyInterfaceLanguage(language = interfaceLanguage || (audience === "j
     "#similarEyebrow": ["SIMILAR SONGS", "似ている曲"],
     "#similarSongsTitle": ["More songs like this", "この曲に似ている曲"],
     "#heroEyebrow": ["CROSS-CULTURAL MUSIC DISCOVERY", "日本の隠れた名曲を世界へ"],
-    "#heroTitle": ["Japanese songs the world hasn’t found yet.", "まだ世界に知られていない日本の名曲を届けよう。"],
-    "#heroLead": ["Japanese listeners recommend songs. Overseas listeners tell us whether they already knew them, then rate them after listening.", "海外の人に聴いてほしい日本の曲を推薦してください。海外リスナーの認知度と視聴後評価から、隠れた名曲を発見します。"],
+    "#heroTitle": ["Your next Japanese favorite.", "次に好きになる、日本の一曲。"],
+    "#heroLead": ["Discover overlooked Japanese hits, then help the best songs rise.", "懐かしいヒットから知られざる名曲まで。聴いて、評価して、次の一曲を見つけよう。"],
     "#audienceEyebrow": ["CHOOSE YOUR ROLE", "利用方法を選択"],
     "#audienceTitle": ["How are you listening?", "どちらとして参加しますか？"],
     "#japanRoleTitle": ["I’m listening from Japan", "日本から参加する"],
@@ -248,7 +248,7 @@ function applyInterfaceLanguage(language = interfaceLanguage || (audience === "j
     "#countryFilterLabel": ["Region", "地域別"],
     "#ageFilterLabel": ["Age band", "年齢別"],
     "#songTagFilterLabel": ["Song tag", "曲のタグ"],
-    "#rankingCopy": ["Hidden Gem Score = Japan Recommendation × (Overseas Rating ÷ 5) × (1 − Overseas Awareness).", "隠れた名曲スコア ＝ 日本での推薦率 ×（海外での評価 ÷ 5）×（1 − 海外での認知度）"],
+    "#rankingCopy": ["GEMS = Japan recommendation × overseas rating × discovery gap. Reference scores are clearly marked.", "GEMS ＝ 日本での推薦率 × 海外評価 × 認知ギャップ。初期参考スコアは明示しています。"],
     "#requestEyebrow": ["ADD A HIDDEN GEM", "曲を推薦"],
     "#requestTitle": ["Recommend a song to the world.", "海外の人に聴いてほしい曲を推薦しよう。"],
     "#requestCopy": ["Enter a song title, choose the correct video from three YouTube results, and add it to the ranking immediately.", "曲名を入力し、YouTubeの候補3件から正しい動画を選んでください。選んだ曲はすぐランキングに追加されます。"],
@@ -1272,7 +1272,7 @@ async function loadAll() {
     feedbackRows
   ] = await Promise.all([
       rest(
-        "rpc/get_hidden_gem_data_segment",
+        "rpc/get_hidden_gem_data_segment_v2",
         {
           method: "POST",
           authenticated: true,
@@ -1497,6 +1497,10 @@ async function loadAll() {
         overseasTotal,
         postListenRatingCount,
 
+        seedBaseline: Boolean(row.has_seed_metrics),
+        realRecommendationTotal: Number(row.real_recommendation_total ?? recommendationTotal),
+        realOverseasTotal: Number(row.real_overseas_total ?? overseasTotal),
+
         myRecommendation,
         myRating
       };
@@ -1545,6 +1549,12 @@ function renderStats() {
         song.overseasTotal,
       0
     );
+
+  const seedActive = songs.some((song) => song.seedBaseline);
+  const baselineNotice = $("#baselineNotice");
+  baselineNotice?.classList.toggle("hidden", !seedActive);
+  setText("#japanVoteLabel", seedActive ? ui("responses incl. reference", "参考値を含む推薦回答") : ui("Japan votes", "日本からの投票"));
+  setText("#overseasResponseLabel", seedActive ? ui("responses incl. reference", "参考値を含む海外回答") : ui("overseas responses", "海外からの回答"));
 
   $("#songCount").textContent =
     songs.length;
@@ -2038,6 +2048,8 @@ function render() {
                   ${escapeHtml(songArtist(song))}
                   ${song.year ? " · " + escapeHtml(song.year) : ""}
                 </div>
+
+                ${song.seedBaseline ? `<div class="seed-score-badge">${ui("REFERENCE SCORE", "初期参考スコア")}</div>` : ""}
 
                 ${song.tags?.length ? `
                   <div class="song-tags">
