@@ -14,6 +14,10 @@ const featureState = {
   VALID_VIEWS.add(view)
 );
 
+function safeFeatureDecode(value = "") {
+  try { return decodeURIComponent(String(value)); } catch { return String(value); }
+}
+
 function featureText(en, ja) {
   return ui(en, ja);
 }
@@ -393,7 +397,7 @@ function renderArtists(selectedArtist = null) {
     groups.get(key).push(song);
   });
 
-  const artist = selectedArtist ? decodeURIComponent(selectedArtist) : featureState.activeArtist;
+  const artist = selectedArtist ? safeFeatureDecode(selectedArtist) : featureState.activeArtist;
   featureState.activeArtist = artist || null;
 
   if (artist && groups.has(artist)) {
@@ -425,7 +429,7 @@ function renderArtists(selectedArtist = null) {
 }
 
 function openArtistPage(encodedArtist) {
-  const artist = decodeURIComponent(encodedArtist);
+  const artist = safeFeatureDecode(encodedArtist);
   featureState.activeArtist = artist;
   featureNavigate("artists", { artist });
 }
@@ -614,6 +618,19 @@ window.openPlaylistPicker = openPlaylistPicker;
 window.addToPlaylist = addToPlaylist;
 window.removeFromPlaylist = removeFromPlaylist;
 window.deletePlaylist = deletePlaylist;
+
+const baseRenderViewForFeatures = renderView;
+renderView = function (view, options = {}) {
+  baseRenderViewForFeatures(view, options);
+  const activeFeatureView = view === "history" ? "playlists" : view;
+  document.querySelectorAll("[data-feature-route]").forEach((item) => {
+    const active = item.dataset.featureRoute === activeFeatureView;
+    item.classList.toggle("is-active", active);
+    if (active) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  });
+  renderFeatureRoute(view, options);
+};
 
 const baseLoadAllForFeatures = loadAll;
 loadAll = async function () {
