@@ -5,22 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Japan Hidden Gems</title>
   <meta name="description" content="Discover Japanese songs loved in Japan but still under-discovered overseas." />
-  <link rel="stylesheet" href="styles.css?v=14" />
+  <link rel="stylesheet" href="styles.css?v=15" />
 </head>
 <body>
   <header class="site-header">
     <div class="shell header-inner">
-      <div class="brand">JAPAN HIDDEN GEMS</div>
+      <button class="brand brand-button" type="button" data-route="home" aria-label="Japan Hidden Gems home">JAPAN HIDDEN GEMS</button>
+      <nav class="primary-nav" aria-label="Primary navigation">
+        <button class="nav-item" type="button" data-route="home"><span id="homeNavLabel">Home</span></button>
+        <button class="nav-item" type="button" data-route="ranking"><span id="rankingNavLabel">Ranking</span></button>
+        <button class="nav-item" type="button" data-route="personalized"><span id="personalizedNavLabel">For You</span></button>
+        <button id="favoritesBtn" class="nav-item" type="button" data-route="favorites">My Hidden Gems</button>
+        <button class="nav-item japan-only" type="button" data-route="request"><span id="requestNavLabel">Recommend</span></button>
+      </nav>
       <div class="header-actions">
         <button id="accountBtn" class="button button-ghost" type="button">Account</button>
-        <button id="favoritesBtn" class="button button-ghost" type="button">My Hidden Gems</button>
         <button id="aboutBtn" class="button button-ghost" type="button">How it works</button>
       </div>
     </div>
   </header>
 
   <main>
-    <section class="hero">
+    <div id="statusBar" class="status hidden" role="status"></div>
+    <section class="hero screen-panel is-active" data-screen="home">
       <div class="shell hero-grid">
         <div>
           <p id="heroEyebrow" class="eyebrow">CROSS-CULTURAL MUSIC DISCOVERY</p>
@@ -37,17 +44,15 @@
       </div>
     </section>
 
-    <section class="stats"><div class="shell stats-grid"><div><strong id="songCount">0</strong><span id="songCountLabel">songs</span></div><div><strong id="japanVoteCount">0</strong><span id="japanVoteLabel">Japan votes</span></div><div><strong id="overseasResponseCount">0</strong><span id="overseasResponseLabel">overseas responses</span></div></div></section>
-    <div id="statusBar" class="status hidden" aria-live="polite"></div>
-
-    <section id="songRequestSection" class="shell section compact japan-only">
+    <section class="stats screen-panel is-active" data-screen="home"><div class="shell stats-grid"><div><strong id="songCount">0</strong><span id="songCountLabel">songs</span></div><div><strong id="japanVoteCount">0</strong><span id="japanVoteLabel">Japan votes</span></div><div><strong id="overseasResponseCount">0</strong><span id="overseasResponseLabel">overseas responses</span></div></div></section>
+    <section id="songRequestSection" class="shell section compact japan-only screen-panel" data-screen="request">
       <p id="requestEyebrow" class="eyebrow dark">ADD A HIDDEN GEM</p><h2 id="requestTitle">Recommend a song to the world.</h2>
       <p id="requestCopy" class="section-copy">Enter a song title, choose the correct video from three YouTube results, and add it to the ranking immediately.</p>
       <form id="songRequestForm" class="song-request-form"><label class="form-field" for="songSearchTitle"><span id="songSearchLabel">Song title</span><input id="songSearchTitle" class="text-input song-url-input" type="search" minlength="2" maxlength="100" autocomplete="off" placeholder="e.g. Plastic Love" required /></label><button id="songSearchSubmit" class="button profile-submit" type="submit">Search</button></form>
       <p id="songRequestNote" class="form-error" aria-live="polite"></p><div id="youtubeCandidates" class="youtube-candidates"></div><p id="requestLimitCopy" class="sample-note">Check the title and channel before choosing a video.</p>
     </section>
 
-    <section class="shell section favorites-section" id="myFavorites">
+    <section class="shell section favorites-section screen-panel" id="myFavorites" data-screen="favorites">
       <div class="section-head">
         <div>
           <p id="favoritesEyebrow" class="eyebrow dark">MY HIDDEN GEMS</p>
@@ -58,7 +63,7 @@
       <div id="favoritesGrid" class="favorites-grid"></div>
     </section>
 
-    <section class="shell section personalized-section" id="personalized">
+    <section class="shell section personalized-section screen-panel" id="personalized" data-screen="personalized">
       <div class="section-head">
         <div>
           <p id="personalizedEyebrow" class="eyebrow dark">FOR YOU</p>
@@ -69,7 +74,7 @@
       <div id="personalizedGrid" class="personalized-grid"></div>
     </section>
 
-    <section class="shell section" id="ranking">
+    <section class="shell section screen-panel" id="ranking" data-screen="ranking">
       <div class="section-head"><div><p id="rankingEyebrow" class="eyebrow dark">DISCOVERY GAP RANKING</p><h2 id="rankingTitle">Hidden Gem Index</h2></div>
         <div class="ranking-controls">
           <label class="filter-field">
@@ -97,8 +102,11 @@
       <div id="cards" class="cards"><p class="muted">Loading songs…</p></div>
     </section>
 
-    <section id="ratingSections" class="rating-sections"></section>
-    <section class="shell section compact"><p class="eyebrow dark">METHOD</p><h2>What makes a hidden gem?</h2><p class="section-copy">A song ranks highly when Japanese listeners recommend it, overseas listeners rarely knew it beforehand, and people outside Japan rate it highly after listening.</p><p class="section-copy">Early results are marked provisional until enough responses are collected.</p></section>
+    <section id="listenScreen" class="screen-panel" data-screen="listen">
+      <div class="shell view-toolbar"><button id="listenBackBtn" class="button button-ghost" type="button">← Back</button></div>
+      <div id="ratingSections" class="rating-sections"></div>
+    </section>
+    <section class="shell section compact screen-panel is-active" data-screen="home"><p class="eyebrow dark">METHOD</p><h2>What makes a hidden gem?</h2><p class="section-copy">A song ranks highly when Japanese listeners recommend it, overseas listeners rarely knew it beforehand, and people outside Japan rate it highly after listening.</p><p class="section-copy">Early results are marked provisional until enough responses are collected.</p></section>
   </main>
 
   <dialog id="profileDialog" class="profile-dialog">
@@ -177,7 +185,7 @@
   <footer><div class="shell footer-inner"><div class="brand">JAPAN HIDDEN GEMS</div><p>Prototype — no copyrighted audio or artwork is hosted here.</p></div></footer>
 
 <script src="jwt-retry.js?v=1"></script>
-<script src="app.js?v=19"></script>
+<script src="app.js?v=20"></script>
 <script src="performance.js?v=2"></script>
 </body>
 </html>
