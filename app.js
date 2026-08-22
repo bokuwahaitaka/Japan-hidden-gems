@@ -56,6 +56,50 @@ function showStatus(
   }
 }
 
+
+function ui(en, ja) {
+  return audience === "japan" ? ja : en;
+}
+
+function setText(selector, value) {
+  const element = $(selector);
+  if (element) element.textContent = value;
+}
+
+function applyInterfaceLanguage(type = audience) {
+  const ja = type === "japan";
+  document.documentElement.lang = ja ? "ja" : "en";
+  const copy = {
+    "#aboutBtn": ["How it works", "仕組み"],
+    "#heroEyebrow": ["CROSS-CULTURAL MUSIC DISCOVERY", "日本の隠れた名曲を世界へ"],
+    "#heroTitle": ["Japanese songs the world hasn’t found yet.", "まだ世界に知られていない日本の名曲を届けよう。"],
+    "#heroLead": ["Japanese listeners recommend songs. Overseas listeners tell us whether they already knew them, then rate them after listening.", "海外の人に聴いてほしい日本の曲を推薦してください。海外リスナーの認知度と視聴後評価から、隠れた名曲を発見します。"],
+    "#audienceEyebrow": ["CHOOSE YOUR ROLE", "利用方法を選択"],
+    "#audienceTitle": ["How are you listening?", "どちらとして参加しますか？"],
+    "#japanRoleTitle": ["I’m listening from Japan", "日本から参加する"],
+    "#japanRoleCopy": ["Recommend songs you think deserve more attention overseas.", "海外の人にもっと聴いてほしい曲を推薦します。"],
+    "#overseasRoleTitle": ["I’m listening from outside Japan", "日本国外から参加する"],
+    "#overseasRoleCopy": ["Discover J-pop you haven't heard yet. Tell us if you knew a song, then rate it after listening.", "まだ知らないJ-POPを見つけ、聴く前の認知度と視聴後の評価を教えてください。"],
+    "#changeAudienceBtn": ["Change audience", "参加方法を変更"],
+    "#songCountLabel": ["songs", "曲"],
+    "#japanVoteLabel": ["Japan votes", "日本からの投票"],
+    "#overseasResponseLabel": ["overseas responses", "海外からの回答"],
+    "#rankingEyebrow": ["DISCOVERY GAP RANKING", "海外との認知ギャップランキング"],
+    "#rankingTitle": ["Hidden Gem Index", "隠れた名曲ランキング"],
+    "#rankingCopy": ["Hidden Gem Score = Japan Recommendation × (Overseas Rating ÷ 5) × (1 − Overseas Awareness).", "隠れた名曲スコア ＝ 日本での推薦率 ×（海外での評価 ÷ 5）×（1 − 海外での認知度）"],
+    "#requestEyebrow": ["ADD A HIDDEN GEM", "曲を推薦"],
+    "#requestTitle": ["Recommend a song to the world.", "海外の人に聴いてほしい曲を推薦しよう。"],
+    "#requestCopy": ["Enter a song title, choose the correct video from three YouTube results, and add it to the ranking immediately.", "曲名を入力し、YouTubeの候補3件から正しい動画を選んでください。選んだ曲はすぐランキングに追加されます。"],
+    "#songSearchLabel": ["Song title", "曲名"],
+    "#songSearchSubmit": ["Search", "YouTubeで検索"],
+    "#requestLimitCopy": ["Check the title and channel before choosing a video.", "選択前に動画名とチャンネルを確認してください。"]
+  };
+  Object.entries(copy).forEach(([selector, values]) => setText(selector, ja ? values[1] : values[0]));
+  const input = $("#songSearchTitle");
+  if (input) input.placeholder = ja ? "例：プラスティック・ラブ" : "e.g. Plastic Love";
+  if (songs.length) render();
+}
+
 function youtubeEmbedUrl(url) {
   if (!url) return null;
 
@@ -404,6 +448,8 @@ async function loadListenerProfile() {
 }
 
 function renderProfileForm(group) {
+  applyInterfaceLanguage(group);
+
   const dialog = $("#profileDialog");
   const country = $("#profileCountry");
   const ageBand = $("#profileAgeBand");
@@ -412,7 +458,7 @@ function renderProfileForm(group) {
   $("#profileGroup").value = group;
   $("#profileTitle").textContent =
     group === "japan"
-      ? "Tell us about your listening"
+      ? "日本のリスナー情報"
       : "Tell us where you’re listening from";
 
   country.value =
@@ -1206,74 +1252,101 @@ function youtubeVideoId(url) {
   }
 }
 
-async function submitSongRequest(event) {
+async function searchSongByTitle(event) {
   event.preventDefault();
-
   if (listenerProfile?.listener_group !== "japan") {
-    showStatus("Only listeners with a Japan profile can add songs.", "error");
+    showStatus("日本プロフィールの利用者だけが曲を検索できます。", "error");
     return;
   }
 
-  const input = $("#songRequestUrl");
-  const button = $("#songRequestSubmit");
+  const input = $("#songSearchTitle");
+  const button = $("#songSearchSubmit");
   const note = $("#songRequestNote");
-  const videoId = youtubeVideoId(input.value.trim());
+  const results = $("#youtubeCandidates");
+  const query = input.value.trim();
 
-  if (!videoId) {
-    note.textContent = "Enter a valid YouTube video URL.";
+  if (query.length < 2 || query.length > 100) {
+    note.textContent = "曲名は2〜100文字で入力してください。";
     return;
   }
 
-  await withBusy(async () => {
-    try {
-      button.disabled = true;
-      button.textContent = "Checking YouTube…";
-      note.textContent = "";
+  button.disabled = true;
+  button.textContent = "YouTubeを検索中…";
+  note.textContent = "";
+  results.innerHTML = "";
 
-      const canonicalUrl = "https://www.youtube.com/watch?v=" + videoId;
-      const metadataResponse = await fetch(
-        "https://www.youtube.com/oembed?format=json&url=" +
-          encodeURIComponent(canonicalUrl)
-      );
+  try {
+    const response = await fetch(
+      SUPABASE_URL + "/functions/v1/search-youtube?q=" + encodeURIComponent(query),
+      { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + accessToken } }
+    );
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "YouTube検索に失敗しました。");
 
-      if (!metadataResponse.ok) {
-        throw new Error("YouTube could not find a public, embeddable video.");
-      }
+    const candidates = Array.isArray(data.items) ? data.items : [];
+    if (!candidates.length) throw new Error("再生可能なYouTube動画が見つかりませんでした。");
+    renderYoutubeCandidates(candidates);
+  } catch (error) {
+    console.error(error);
+    note.textContent = error.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = "YouTubeで検索";
+  }
+}
 
-      const metadata = await metadataResponse.json();
-      const title = String(metadata.title || "").trim();
-      const artist = String(metadata.author_name || "").trim();
+function renderYoutubeCandidates(candidates) {
+  const results = $("#youtubeCandidates");
+  results.innerHTML = candidates.map((item) => {
+    const id = escapeHtml(item.videoId);
+    const title = escapeHtml(item.title);
+    const channel = escapeHtml(item.channelTitle);
+    return '<article class="youtube-candidate">' +
+      '<div class="candidate-preview"><iframe src="https://www.youtube.com/embed/' + id + '" ' +
+      'title="' + title + '" loading="lazy" ' +
+      'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>' +
+      '<div class="youtube-candidate-copy"><h3>' + title + '</h3><p>' + channel + '</p>' +
+      '<button class="button candidate-add" type="button" data-video-id="' + id +
+      '" data-title="' + title + '" data-channel="' + channel + '">この動画を選ぶ</button></div></article>';
+  }).join("");
 
-      if (!title || !artist) {
-        throw new Error("The title or channel name could not be read.");
-      }
-
-      button.textContent = "Adding song…";
-
-      await rest("rpc/request_song", {
-        method: "POST",
-        authenticated: true,
-        body: JSON.stringify({
-          p_title: title,
-          p_artist: artist,
-          p_youtube_url: canonicalUrl,
-          p_video_id: videoId
-        })
-      });
-
-      input.value = "";
-      note.textContent = "";
-      showStatus("The song was added to the ranking.");
-      await loadAll();
-      $("#ranking")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch (requestError) {
-      console.error(requestError);
-      note.textContent = requestError.message;
-    } finally {
-      button.disabled = false;
-      button.textContent = "Add to ranking";
-    }
+  results.querySelectorAll(".candidate-add").forEach((button) => {
+    button.addEventListener("click", () => addYoutubeCandidate(button));
   });
+}
+
+async function addYoutubeCandidate(button) {
+  const videoId = button.dataset.videoId;
+  const title = button.dataset.title;
+  const artist = button.dataset.channel;
+  const note = $("#songRequestNote");
+
+  button.disabled = true;
+  button.textContent = "追加中…";
+  note.textContent = "";
+
+  try {
+    await rest("rpc/request_song", {
+      method: "POST",
+      authenticated: true,
+      body: JSON.stringify({
+        p_title: title,
+        p_artist: artist,
+        p_youtube_url: "https://www.youtube.com/watch?v=" + videoId,
+        p_video_id: videoId
+      })
+    });
+    $("#songSearchTitle").value = "";
+    $("#youtubeCandidates").innerHTML = "";
+    showStatus("曲をランキングに追加しました。");
+    await loadAll();
+    $("#ranking")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (error) {
+    console.error(error);
+    note.textContent = error.message;
+    button.disabled = false;
+    button.textContent = "この動画を選ぶ";
+  }
 }
 
 /* =========================
@@ -1579,6 +1652,8 @@ function setAudience(
   document.body.dataset.audience =
     type;
 
+  applyInterfaceLanguage(type);
+
   $("#japanListener")
     ?.classList.toggle(
       "is-selected",
@@ -1687,7 +1762,7 @@ function wireUi() {
   $("#songRequestForm")
     ?.addEventListener(
       "submit",
-      submitSongRequest
+      searchSongByTitle
     );
 
   $("#profileForm")
