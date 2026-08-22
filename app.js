@@ -117,7 +117,7 @@ function setText(selector, value) {
   if (element) element.textContent = value;
 }
 
-const VALID_VIEWS = new Set(["home", "ranking", "personalized", "favorites", "request", "listen"]);
+const VALID_VIEWS = new Set(["home", "ranking", "personalized", "favorites", "request", "listen", "detail", "discover", "artists", "playlists", "history"]);
 
 function routeFromLocation() {
   const requested = new URLSearchParams(window.location.search).get("view");
