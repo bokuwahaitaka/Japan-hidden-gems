@@ -5,6 +5,7 @@ const SESSION_KEY = "jhg_admin_session_v1";
 let accessToken = null;
 let adminSongs = [];
 let adminTags = [];
+let adminReports = [];
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -68,13 +69,16 @@ function showAdmin() {
 async function loadSongs() {
   $("#adminStatus").textContent = "読み込み中…";
   try {
-    const [songs, tags] = await Promise.all([
+    const [songs, tags, reports] = await Promise.all([
       rpc("admin_list_songs_v2"),
-      rpc("admin_list_song_tags")
+      rpc("admin_list_song_tags"),
+      rpc("admin_list_tag_reports")
     ]);
     adminSongs = songs ?? [];
     adminTags = tags ?? [];
+    adminReports = reports ?? [];
     renderSongs();
+    renderReports();
     $("#adminStatus").textContent = adminSongs.length + "曲";
   } catch (error) {
     showLogin("管理者として登録されていないか、セッションが無効です。");
@@ -124,6 +128,49 @@ function renderSongs() {
       </details>
     </article>
   `).join("") || '<p class="empty">該当する曲がありません。</p>';
+}
+
+function renderReports() {
+  const container = $("#tagReports");
+  if (!container) return;
+
+  const openReports = adminReports.filter((report) => report.status === "open");
+  container.innerHTML = openReports.map((report) => `
+    <article class="song-row report-row">
+      <div class="song-copy">
+        <span class="badge hidden-badge">タグ報告</span>
+        <h2>${escapeHtml(report.song_title)}</h2>
+        <p>${escapeHtml(report.song_artist)}</p>
+        <p>${escapeHtml(report.message)}</p>
+        <small>${new Date(report.created_at).toLocaleString("ja-JP")} · 報告ID ${report.id}</small>
+      </div>
+      <div class="song-actions">
+        <button type="button" data-report-action="edit" data-song-id="${report.song_id}">
+          曲のタグを確認
+        </button>
+        <button type="button" data-report-action="resolved" data-report-id="${report.id}">
+          対応済み
+        </button>
+        <button class="secondary" type="button" data-report-action="dismissed" data-report-id="${report.id}">
+          却下
+        </button>
+      </div>
+    </article>
+  `).join("") || '<p class="empty">未対応のタグ報告はありません。</p>';
+}
+
+async function setReportStatus(button) {
+  button.disabled = true;
+  try {
+    await rpc("admin_set_tag_report_status", {
+      p_report_id: Number(button.dataset.reportId),
+      p_status: button.dataset.reportAction
+    });
+    await loadSongs();
+  } catch (error) {
+    $("#adminStatus").textContent = error.message;
+    button.disabled = false;
+  }
 }
 
 async function toggleSong(button) {
@@ -189,6 +236,22 @@ $("#adminSongs").addEventListener("click", (event) => {
   if (button.dataset.action === "toggle") toggleSong(button);
   if (button.dataset.action === "delete") openDelete(Number(button.dataset.id));
   if (button.dataset.action === "tags") saveSongTags(button);
+});
+
+$("#tagReports")?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-report-action]");
+  if (!button) return;
+
+  if (button.dataset.reportAction === "edit") {
+    const song = document.querySelector(
+      '.song-row button[data-action="tags"][data-id="' + Number(button.dataset.songId) + '"]'
+    );
+    song?.closest(".song-row")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    song?.closest("details")?.setAttribute("open", "");
+    return;
+  }
+
+  setReportStatus(button);
 });
 
 $("#deleteForm").addEventListener("submit", async (event) => {

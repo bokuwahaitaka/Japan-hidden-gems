@@ -191,3 +191,21 @@ body:not([data-audience="japan"]) .japan-only{display:none!important}
   .ranking-controls{width:100%;display:grid;grid-template-columns:1fr}
   .filter-field .select,.ranking-controls>.select{width:100%}
 }
+
+.song-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.7rem 0;
+}
+
+.song-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid rgba(28, 33, 31, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
