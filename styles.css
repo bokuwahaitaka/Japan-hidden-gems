@@ -300,3 +300,16 @@ body:not([data-audience="japan"]) .japan-only{display:none!important}
     font-size: 0.75rem;
   }
 }
+
+.auth-dialog{width:min(540px,calc(100% - 28px))}
+.auth-form{display:grid;gap:18px;margin-top:22px}
+.auth-input{text-transform:none}
+.auth-actions{display:flex;flex-wrap:wrap;gap:10px}
+.auth-primary{background:var(--accent);color:#fff}
+.account-email{overflow-wrap:anywhere;font-weight:800;font-size:1.05rem}
+#accountBtn[data-member="true"]{border-color:var(--success);color:var(--success)}
+@media(max-width:640px){
+  .header-inner{gap:10px}
+  .header-actions{width:100%;overflow-x:auto;padding-bottom:4px}
+  .header-actions .button{white-space:nowrap}
+}
