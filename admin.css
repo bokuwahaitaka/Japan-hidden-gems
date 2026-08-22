@@ -10,3 +10,11 @@ button{border:0;border-radius:999px;padding:11px 15px;background:var(--accent);c
 .badge{display:inline-block;border-radius:999px;padding:4px 8px;background:#d9efe5;color:#225a43;font-size:.75rem;font-weight:900}.hidden-badge{background:#eee;color:#555}
 .error{color:var(--danger);font-weight:700}.empty{color:var(--muted)}dialog{width:min(520px,calc(100% - 28px));border:0;border-radius:18px;padding:26px}dialog::backdrop{background:rgba(0,0,0,.55)}.dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
 @media(max-width:720px){.admin-header,.song-row{align-items:flex-start;flex-direction:column}.toolbar{grid-template-columns:1fr}.song-actions{width:100%}}
+
+.tag-editor{width:100%;border-top:1px solid var(--line);padding-top:12px}
+.tag-editor summary{cursor:pointer;font-weight:800;color:var(--accent)}
+.admin-tag-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+.admin-tag-grid label{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff}
+.admin-tag-grid input{width:auto}.admin-tag-grid small{display:block;color:var(--muted)}
+.song-row{flex-wrap:wrap}
+@media(max-width:720px){.admin-tag-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
