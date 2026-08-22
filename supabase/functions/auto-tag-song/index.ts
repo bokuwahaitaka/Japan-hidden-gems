@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const geminiKey = Deno.env.get("GEMINI_API_KEY");
-  const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
+  const model = Deno.env.get("GEMINI_MODEL") || "gemini-3.6-flash";
   const authorization = req.headers.get("authorization");
 
   if (!supabaseUrl || !anonKey || !serviceKey || !geminiKey) {
@@ -163,7 +163,6 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.2,
             responseMimeType: "application/json",
             responseJsonSchema: {
               type: "object",
