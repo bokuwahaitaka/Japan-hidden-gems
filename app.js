@@ -1598,6 +1598,16 @@ async function openSimilarSongs(songId) {
       const reasons = sharedTags.map((tag) =>
         escapeHtml(ui(tag.label_en, tag.label_ja))
       );
+      const matchedSong = songs.find(
+        (song) => Number(song.id) === Number(row.song_id)
+      );
+      const displaySong = matchedSong || {
+        id: Number(row.song_id),
+        title: row.title,
+        artist: row.artist,
+        year: row.year,
+        youtube_url: row.youtube_url || null
+      };
       const sameArtist =
         String(row.artist).toLowerCase() ===
         String(sourceSong.artist).toLowerCase();
@@ -1613,12 +1623,13 @@ async function openSimilarSongs(songId) {
       }
 
       return `
-        <article class="similar-song-card">
+        <article class="similar-song-card editorial-song-card">
+          ${songArtwork(displaySong)}
           <p class="eyebrow dark">${ui("SIMILAR PICK", "類似候補")}</p>
-          <h3>${escapeHtml(row.title)}</h3>
+          <h3>${escapeHtml(songTitle(displaySong))}</h3>
           <p class="meta">
-            ${escapeHtml(row.artist)}
-            ${row.year ? " · " + escapeHtml(row.year) : ""}
+            ${escapeHtml(songArtist(displaySong))}
+            ${displaySong.year ? " · " + escapeHtml(displaySong.year) : ""}
           </p>
           <p class="similar-reason">
             ${reasons.length
