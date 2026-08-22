@@ -278,7 +278,7 @@ as $$
   select * from country_options
   union all
   select * from age_options
-  order by filter_type, value;
+  order by 1, 2;
 $$;
 
 drop function if exists public.get_hidden_gem_data_segment(text, text);
