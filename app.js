@@ -22,7 +22,8 @@ let selectedSongTag = null;
 let personalizedRecommendations = [];
 let favoriteSongIds = new Set();
 let notInterestedSongIds = new Set();
-let interfaceLanguage = ["ja", "en"].includes(localStorage.getItem("jhg_interface_language_v1")) ? localStorage.getItem("jhg_interface_language_v1") : null;
+const SUPPORTED_INTERFACE_LANGUAGES = ["ja", "en", "ko", "zh", "ru", "es", "fr"];
+let interfaceLanguage = SUPPORTED_INTERFACE_LANGUAGES.includes(localStorage.getItem("jhg_interface_language_v1")) ? localStorage.getItem("jhg_interface_language_v1") : null;
 let currentView = "home";
 let activeRatingSongId = null;
 
@@ -109,7 +110,7 @@ function songArtist(song) {
 }
 
 function setInterfaceLanguage(language, persist = true) {
-  interfaceLanguage = language === "ja" ? "ja" : "en";
+  interfaceLanguage = SUPPORTED_INTERFACE_LANGUAGES.includes(language) ? language : "en";
   if (persist) localStorage.setItem(LANGUAGE_KEY, interfaceLanguage);
   applyInterfaceLanguage(interfaceLanguage);
 }
@@ -189,10 +190,11 @@ function goBackFromListen() {
 }
 
 function applyInterfaceLanguage(language = interfaceLanguage || (audience === "japan" ? "ja" : "en")) {
-  const ja = language === "ja" || language === "japan";
-  interfaceLanguage = ja ? "ja" : "en";
+  const normalizedLanguage = SUPPORTED_INTERFACE_LANGUAGES.includes(language) ? language : (language === "japan" ? "ja" : "en");
+  const ja = normalizedLanguage === "ja";
+  interfaceLanguage = normalizedLanguage;
   document.documentElement.dataset.language = interfaceLanguage;
-  document.documentElement.lang = ja ? "ja" : "en";
+  document.documentElement.lang = interfaceLanguage === "zh" ? "zh-CN" : interfaceLanguage;
   const copy = {
     "#accountBtn": ["Account", "アカウント"],
     "#languageLabel": ["Language", "言語"],
