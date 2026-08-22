@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Japan Hidden Gems</title>
   <meta name="description" content="Discover Japanese songs loved in Japan but still under-discovered overseas." />
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <link rel="stylesheet" href="styles.css?v=8" />
 </head>
 <body>
   <header class="site-header">
@@ -58,6 +58,12 @@
               <option value="">All ages</option>
             </select>
           </label>
+          <label class="filter-field">
+            <span id="songTagFilterLabel">Song tag</span>
+            <select id="songTagFilter" class="select" aria-label="Filter by song tag">
+              <option value="">All tags</option>
+            </select>
+          </label>
           <select id="sortSelect" class="select" aria-label="Sort ranking"><option value="score">Highest Hidden Gem Score</option><option value="japan">Highest Japan Recommendation</option><option value="awareness">Lowest Overseas Awareness</option><option value="rating">Highest Overseas Rating</option></select>
         </div>
       </div>
@@ -79,7 +85,7 @@
   <footer><div class="shell footer-inner"><div class="brand">JAPAN HIDDEN GEMS</div><p>Prototype — no copyrighted audio or artwork is hosted here.</p></div></footer>
 
 <script src="jwt-retry.js?v=1"></script>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 <script src="performance.js?v=2"></script>
 </body>
 </html>
