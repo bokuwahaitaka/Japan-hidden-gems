@@ -238,19 +238,18 @@ async function backfillAiTags() {
     } catch (error) {
       console.error("AI tag backfill failed:", item.song.id, error);
       failed += 1;
-      if (!firstFailure) {
-        firstFailure = item.song.title + "：" + error.message;
-      }
+      firstFailure = item.song.title + "：" + error.message;
+      break;
     }
 
     await new Promise((resolve) => setTimeout(resolve, 900));
   }
 
+  await loadSongs();
   button.disabled = false;
   $("#adminStatus").textContent =
     "AIタグ付け完了：成功 " + succeeded + "曲、失敗 " + failed + "曲" +
-    (firstFailure ? "｜最初のエラー：" + firstFailure : "");
-  await loadSongs();
+    (firstFailure ? "｜停止理由：" + firstFailure : "");
 }
 
 async function toggleSong(button) {
