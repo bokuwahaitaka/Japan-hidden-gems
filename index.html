@@ -130,6 +130,18 @@
       </form>
       <p id="authGuestNote" class="privacy-note">Anonymous use stays available. Creating an account keeps the current browser’s favorites and responses.</p>
     </div>
+    <div id="authFinishPanel" class="hidden">
+      <p id="authFinishCopy" class="section-copy">Email confirmed. Set a password to finish creating your account.</p>
+      <form id="finishAccountForm" class="auth-form">
+        <label class="form-field">
+          <span id="finishPasswordLabel">New password</span>
+          <input id="finishPassword" class="text-input auth-input" type="password" minlength="8" autocomplete="new-password" required />
+          <small id="finishPasswordHint">Use at least 8 characters.</small>
+        </label>
+        <p id="finishAccountError" class="form-error" aria-live="polite"></p>
+        <button id="finishAccountButton" class="button auth-primary" type="submit">Finish account</button>
+      </form>
+    </div>
     <div id="authMemberPanel" class="hidden">
       <p id="authSignedInLabel" class="section-copy">Signed in as</p>
       <p id="accountEmail" class="account-email"></p>
