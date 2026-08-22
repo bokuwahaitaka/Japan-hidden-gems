@@ -204,8 +204,8 @@ function applyInterfaceLanguage(language = interfaceLanguage || (audience === "j
     "#methodNote": ["Early results are marked provisional until enough responses are collected.", "十分な回答が集まるまでは暫定結果として表示されます。"],
     "#profileEyebrow": ["ANONYMOUS LISTENER PROFILE", "匿名リスナープロフィール"],
     "#profileTitle": ["Tell us about your listening", "あなたの音楽の聴き方を教えてください"],
-    "#profileCountryLabel": ["Country or region", "国・地域"],
-    "#profileCountryHint": ["Use the two-letter country code. Japan is JP.", "2文字の国コードを入力してください。日本はJPです。"],
+    "#profileCountryLabel": ["Region", "地域"],
+    "#profileCountryHint": ["Choose the broad region where you live.", "現在住んでいる大まかな地域を選択してください。"],
     "#profileAgeLabel": ["Age band", "年齢層"],
     "#profileGenresLabel": ["Genres you enjoy", "好きなジャンル"],
     "#profileGenresHint": ["Choose 1–5.", "1〜5個選択してください。"],
@@ -245,7 +245,7 @@ function applyInterfaceLanguage(language = interfaceLanguage || (audience === "j
     "#personalizedCopy": ["Based on your favorite genres, recommendations, ratings, and song tags.", "好きなジャンル・推薦・評価・曲タグをもとに選んでいます。"],
     "#rankingEyebrow": ["DISCOVERY GAP RANKING", "海外との認知ギャップランキング"],
     "#rankingTitle": ["Hidden Gem Index", "隠れた名曲ランキング"],
-    "#countryFilterLabel": ["Country", "国別"],
+    "#countryFilterLabel": ["Region", "地域別"],
     "#ageFilterLabel": ["Age band", "年齢別"],
     "#songTagFilterLabel": ["Song tag", "曲のタグ"],
     "#rankingCopy": ["Hidden Gem Score = Japan Recommendation × (Overseas Rating ÷ 5) × (1 − Overseas Awareness).", "隠れた名曲スコア ＝ 日本での推薦率 ×（海外での評価 ÷ 5）×（1 − 海外での認知度）"],
@@ -890,6 +890,22 @@ const AGE_BANDS = {
   prefer_not_to_say: "Prefer not to say"
 };
 
+const REGION_OPTIONS = {
+  JP: { en: "Japan", ja: "日本" },
+  EA: { en: "East Asia", ja: "東アジア" },
+  SE: { en: "Southeast Asia", ja: "東南アジア" },
+  SA: { en: "South Asia", ja: "南アジア" },
+  CA: { en: "Central Asia", ja: "中央アジア" },
+  ME: { en: "Middle East", ja: "中東" },
+  EU: { en: "Europe", ja: "ヨーロッパ" },
+  AF: { en: "Africa", ja: "アフリカ" },
+  NA: { en: "North America", ja: "北アメリカ" },
+  LA: { en: "Latin America & Caribbean", ja: "中南米・カリブ海" },
+  OC: { en: "Oceania", ja: "オセアニア" },
+  OT: { en: "Other / Prefer not to say", ja: "その他・回答しない" }
+};
+
+
 async function loadListenerProfile() {
   const [profiles, preferences, genres] = await Promise.all([
     rest(
@@ -931,14 +947,31 @@ function renderProfileForm(group) {
       ? "日本のリスナー情報"
       : "Tell us where you’re listening from";
 
-  country.value =
-    listenerProfile?.listener_group === group
+  const availableRegions = Object.entries(REGION_OPTIONS)
+    .filter(([code]) => group === "japan" ? code === "JP" : code !== "JP");
+
+  country.innerHTML =
+    (group === "overseas"
+      ? '<option value="">' + ui("Choose a region", "地域を選択") + "</option>"
+      : "") +
+    availableRegions
+      .map(([code, label]) =>
+        '<option value="' + code + '">' +
+        escapeHtml(ui(label.en, label.ja)) +
+        "</option>"
+      )
+      .join("");
+
+  const savedRegion =
+    listenerProfile?.listener_group === group &&
+    REGION_OPTIONS[listenerProfile.country_code]
       ? listenerProfile.country_code
       : group === "japan"
         ? "JP"
         : "";
 
-  country.readOnly = group === "japan";
+  country.value = savedRegion;
+  country.disabled = group === "japan";
 
   ageBand.innerHTML =
     '<option value="">Choose an age band</option>' +
@@ -980,8 +1013,8 @@ async function saveListenerProfile(event) {
 
   const error = $("#profileError");
 
-  if (!/^[A-Z]{2}$/.test(countryCode)) {
-    error.textContent = "Enter a two-letter country code, such as JP, US, GB or KR.";
+  if (!REGION_OPTIONS[countryCode]) {
+    error.textContent = ui("Choose a region.", "地域を選択してください。");
     return;
   }
 
@@ -989,8 +1022,8 @@ async function saveListenerProfile(event) {
       (group === "overseas" && countryCode === "JP")) {
     error.textContent =
       group === "japan"
-        ? "The Japan listener option uses country code JP."
-        : "Choose Japan as your role if your country code is JP.";
+        ? ui("The Japan listener option uses Japan.", "日本から参加する場合は「日本」を使用します。")
+        : ui("Choose the Japan listener role if you live in Japan.", "日本に住んでいる場合は「日本から参加する」を選択してください。");
     return;
   }
 
@@ -1093,10 +1126,10 @@ async function loadDemographicOptions() {
 function renderDemographicOptions() {
   if (!countryFilter || !ageFilter) return;
 
-  const countries =
+  const regions =
     demographicOptions.filter(
       (option) =>
-        option.filter_type === "country"
+        option.filter_type === "region"
     );
 
   const ages =
@@ -1107,15 +1140,15 @@ function renderDemographicOptions() {
 
   countryFilter.innerHTML =
     '<option value="">' +
-      ui("All countries", "すべての国") +
+      ui("All regions", "すべての地域") +
     "</option>" +
-    countries
+    regions
       .map(
         (option) =>
           '<option value="' +
           escapeHtml(option.value) +
           '">' +
-          escapeHtml(option.label) +
+          escapeHtml(ui(option.label_en, option.label_ja)) +
           " (" +
           Number(option.respondent_count) +
           ")" +
