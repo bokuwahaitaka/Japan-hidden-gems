@@ -209,3 +209,45 @@ body:not([data-audience="japan"]) .japan-only{display:none!important}
   font-size: 0.78rem;
   line-height: 1.2;
 }
+
+.personalized-section {
+  padding-top: 2rem;
+}
+
+.personalized-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.personalized-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+  padding: 1.25rem;
+  border: 1px solid rgba(28, 33, 31, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.personalized-card h3 {
+  margin: 0.35rem 0 0.25rem;
+}
+
+.personalized-card .actions {
+  margin-top: auto;
+}
+
+.personalized-score {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.personalized-reason {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
