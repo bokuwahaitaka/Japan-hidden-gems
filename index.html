@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Japan Hidden Gems</title>
   <meta name="description" content="Discover Japanese songs loved in Japan but still under-discovered overseas." />
-  <link rel="stylesheet" href="styles.css?v=19" />
+  <link rel="stylesheet" href="styles.css?v=20" />
 </head>
 <body>
   <header class="site-header">
@@ -14,6 +14,7 @@
       <nav class="primary-nav" aria-label="Primary navigation">
         <button class="nav-item" type="button" data-route="home"><span id="homeNavLabel">Home</span></button>
         <button class="nav-item" type="button" data-route="ranking"><span id="rankingNavLabel">Ranking</span></button>
+        <button class="nav-item" type="button" data-route="genres"><span id="genresNavLabel">Genres</span></button>
         <button class="nav-item" type="button" data-route="personalized"><span id="personalizedNavLabel">For You</span></button>
         <button id="favoritesBtn" class="nav-item" type="button" data-route="favorites">My Hidden Gems</button>
         <button class="nav-item japan-only" type="button" data-route="request"><span id="requestNavLabel">Recommend</span></button>
@@ -79,6 +80,17 @@
       </div>
       <p id="personalizedCopy" class="section-copy">Based on your favorite genres, recommendations, ratings, and song tags.</p>
       <div id="personalizedGrid" class="personalized-grid"></div>
+    </section>
+
+    <section class="shell section screen-panel genres-section" id="genres" data-screen="genres">
+      <div class="section-head">
+        <div>
+          <p id="genresEyebrow" class="eyebrow dark">BROWSE BY GENRE</p>
+          <h2 id="genresTitle">Find your sound.</h2>
+        </div>
+      </div>
+      <p id="genresCopy" class="section-copy">Choose a genre to open its ranking.</p>
+      <div id="genreDirectoryGrid" class="genre-directory-grid" aria-live="polite"></div>
     </section>
 
     <section class="shell section screen-panel" id="ranking" data-screen="ranking">
@@ -193,7 +205,7 @@
   <footer><div class="shell footer-inner"><div class="brand">JAPAN HIDDEN GEMS</div><p id="footerCopy">Prototype — no copyrighted audio or artwork is hosted here.</p></div></footer>
 
 <script src="jwt-retry.js?v=1"></script>
-<script src="app.js?v=26"></script>
+<script src="app.js?v=27"></script>
 <script src="performance.js?v=4"></script>
 <script src="features.js?v=3"></script>
 </body>
