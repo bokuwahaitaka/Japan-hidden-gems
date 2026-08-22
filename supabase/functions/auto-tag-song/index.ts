@@ -58,12 +58,24 @@ Deno.serve(async (req) => {
   const authorization = req.headers.get("authorization");
 
   if (!supabaseUrl || !anonKey || !serviceKey || !geminiKey) {
-    return json({ error: "Function secrets are incomplete." }, 500, origin);
+    const missing = [
+      !supabaseUrl && "SUPABASE_URL",
+      !anonKey && "SUPABASE_ANON_KEY",
+      !serviceKey && "SUPABASE_SERVICE_ROLE_KEY",
+      !geminiKey && "GEMINI_API_KEY",
+    ].filter(Boolean);
+    return json({
+      error: "Function secrets are incomplete.",
+      stage: "configuration",
+      missing,
+    }, 500, origin);
   }
 
   if (!authorization?.startsWith("Bearer ")) {
     return json({ error: "Authorization required." }, 401, origin);
   }
+
+  let stage = "authenticate-user";
 
   try {
     const userResponse = await fetch(supabaseUrl + "/auth/v1/user", {
@@ -71,6 +83,7 @@ Deno.serve(async (req) => {
     });
     const user = await parseJson(userResponse);
 
+    stage = "load-profile";
     const profileResponse = await fetch(
       supabaseUrl + "/rest/v1/listener_profiles?select=listener_group&user_id=eq." +
         encodeURIComponent(user.id) + "&limit=1",
@@ -78,6 +91,7 @@ Deno.serve(async (req) => {
     );
     const profiles = await parseJson(profileResponse);
 
+    stage = "check-admin";
     const adminResponse = await fetch(
       supabaseUrl + "/rest/v1/rpc/is_song_admin",
       {
@@ -96,6 +110,7 @@ Deno.serve(async (req) => {
       return json({ error: "Only Japan profiles or administrators can tag songs." }, 403, origin);
     }
 
+    stage = "read-request";
     const payload = await req.json();
     const videoId = String(payload?.videoId || "").trim();
 
@@ -103,6 +118,7 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid YouTube video ID." }, 400, origin);
     }
 
+    stage = "find-song";
     const youtubeUrl = "https://www.youtube.com/watch?v=" + videoId;
     const songResponse = await fetch(
       supabaseUrl +
@@ -134,12 +150,16 @@ Deno.serve(async (req) => {
       "YouTube video ID: " + videoId,
     ].join("\n");
 
+    stage = "gemini-generate";
     const geminiResponse = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models/" +
-        encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(geminiKey),
+        encodeURIComponent(model) + ":generateContent",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": geminiKey,
+        },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: {
@@ -180,6 +200,7 @@ Deno.serve(async (req) => {
       throw new Error("Gemini returned no tags.");
     }
 
+    stage = "save-tags";
     const saveResponse = await fetch(supabaseUrl + "/rest/v1/rpc/save_ai_song_tags", {
       method: "POST",
       headers: {
@@ -197,9 +218,12 @@ Deno.serve(async (req) => {
 
     return json({ songId: song.id, savedCount, tags: generated.tags }, 200, origin);
   } catch (error) {
-    console.error(error);
+    console.error("[auto-tag-song:" + stage + "]", error);
     return json(
-      { error: error instanceof Error ? error.message : "Automatic tagging failed." },
+      {
+        error: error instanceof Error ? error.message : "Automatic tagging failed.",
+        stage,
+      },
       500,
       origin,
     );
