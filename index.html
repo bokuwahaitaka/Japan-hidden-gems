@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Japan Hidden Gems</title>
   <meta name="description" content="Discover Japanese songs loved in Japan but still under-discovered overseas." />
-  <link rel="stylesheet" href="styles.css?v=12" />
+  <link rel="stylesheet" href="styles.css?v=13" />
 </head>
 <body>
   <header class="site-header">
@@ -127,6 +127,7 @@
           <button id="signInButton" class="button auth-primary" type="submit">Log in</button>
           <button id="createAccountButton" class="button button-ghost" type="button">Create account</button>
         </div>
+        <button id="forgotPasswordButton" class="text-button auth-help-button" type="button">Forgot your password?</button>
       </form>
       <p id="authGuestNote" class="privacy-note">Anonymous use stays available. Creating an account keeps the current browser’s favorites and responses.</p>
     </div>
@@ -142,6 +143,18 @@
         <button id="finishAccountButton" class="button auth-primary" type="submit">Finish account</button>
       </form>
     </div>
+    <div id="authResetPanel" class="hidden">
+      <p id="authResetCopy" class="section-copy">Enter a new password for your account.</p>
+      <form id="resetPasswordForm" class="auth-form">
+        <label class="form-field">
+          <span id="resetPasswordLabel">New password</span>
+          <input id="resetPassword" class="text-input auth-input" type="password" minlength="8" autocomplete="new-password" required />
+          <small id="resetPasswordHint">Use at least 8 characters.</small>
+        </label>
+        <p id="resetPasswordError" class="form-error" aria-live="polite"></p>
+        <button id="resetPasswordButton" class="button auth-primary" type="submit">Update password</button>
+      </form>
+    </div>
     <div id="authMemberPanel" class="hidden">
       <p id="authSignedInLabel" class="section-copy">Signed in as</p>
       <p id="accountEmail" class="account-email"></p>
@@ -154,7 +167,7 @@
   <footer><div class="shell footer-inner"><div class="brand">JAPAN HIDDEN GEMS</div><p>Prototype — no copyrighted audio or artwork is hosted here.</p></div></footer>
 
 <script src="jwt-retry.js?v=1"></script>
-<script src="app.js?v=17"></script>
+<script src="app.js?v=18"></script>
 <script src="performance.js?v=2"></script>
 </body>
 </html>
