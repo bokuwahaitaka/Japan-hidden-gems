@@ -199,6 +199,27 @@ async function invokeAutoTag(videoId) {
   return parseResponse(response);
 }
 
+function quotaRetryDelayMs(error) {
+  const message = String(error?.message || "");
+  const match = message.match(/retry in\s+([0-9.]+)s/i);
+  if (match) return Math.ceil(Number(match[1]) * 1000) + 1500;
+  if (/quota|rate.?limit|429/i.test(message)) return 15000;
+  return 0;
+}
+
+async function invokeAutoTagWithRetry(videoId, onWait) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await invokeAutoTag(videoId);
+    } catch (error) {
+      const waitMs = quotaRetryDelayMs(error);
+      if (!waitMs || attempt === 2) throw error;
+      onWait(Math.ceil(waitMs / 1000), attempt + 1);
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+    }
+  }
+}
+
 async function backfillAiTags() {
   const button = $("#backfillTags");
   const candidates = adminSongs
@@ -233,7 +254,11 @@ async function backfillAiTags() {
       "（途中で閉じても、次回は未完了分から再開できます）";
 
     try {
-      await invokeAutoTag(item.videoId);
+      await invokeAutoTagWithRetry(item.videoId, (seconds, attempt) => {
+        $("#adminStatus").textContent =
+          "無料枠の速度制限を回避するため " + seconds + "秒待機中" +
+          "（再試行 " + attempt + " / 2）：" + item.song.title;
+      });
       succeeded += 1;
     } catch (error) {
       console.error("AI tag backfill failed:", item.song.id, error);
@@ -242,7 +267,7 @@ async function backfillAiTags() {
       break;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    await new Promise((resolve) => setTimeout(resolve, 4000));
   }
 
   await loadSongs();
