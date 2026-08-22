@@ -336,6 +336,24 @@ function youtubeEmbedUrl(url) {
   }
 }
 
+
+function youtubeThumbnailUrl(url) {
+  const id = youtubeVideoId(url);
+  return id
+    ? `https://i.ytimg.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`
+    : null;
+}
+
+function songArtwork(song, extraClass = "") {
+  const thumbnail = youtubeThumbnailUrl(song?.youtube_url);
+  const classes = ["song-artwork", extraClass].filter(Boolean).join(" ");
+  const title = escapeHtml(songTitle(song));
+
+  return thumbnail
+    ? `<div class="${classes}"><img src="${thumbnail}" alt="" loading="lazy" decoding="async"><span class="artwork-play" aria-hidden="true">▶</span></div>`
+    : `<div class="${classes} artwork-fallback" aria-label="${title}"><span>JHG</span></div>`;
+}
+
 /* =========================
    AUTH
 ========================= */
@@ -1580,6 +1598,16 @@ async function openSimilarSongs(songId) {
       const reasons = sharedTags.map((tag) =>
         escapeHtml(ui(tag.label_en, tag.label_ja))
       );
+      const matchedSong = songs.find(
+        (song) => Number(song.id) === Number(row.song_id)
+      );
+      const displaySong = matchedSong || {
+        id: Number(row.song_id),
+        title: row.title,
+        artist: row.artist,
+        year: row.year,
+        youtube_url: row.youtube_url || null
+      };
       const sameArtist =
         String(row.artist).toLowerCase() ===
         String(sourceSong.artist).toLowerCase();
@@ -1595,12 +1623,13 @@ async function openSimilarSongs(songId) {
       }
 
       return `
-        <article class="similar-song-card">
+        <article class="similar-song-card editorial-song-card">
+          ${songArtwork(displaySong)}
           <p class="eyebrow dark">${ui("SIMILAR PICK", "類似候補")}</p>
-          <h3>${escapeHtml(row.title)}</h3>
+          <h3>${escapeHtml(songTitle(displaySong))}</h3>
           <p class="meta">
-            ${escapeHtml(row.artist)}
-            ${row.year ? " · " + escapeHtml(row.year) : ""}
+            ${escapeHtml(songArtist(displaySong))}
+            ${displaySong.year ? " · " + escapeHtml(displaySong.year) : ""}
           </p>
           <p class="similar-reason">
             ${reasons.length
@@ -1669,18 +1698,19 @@ function renderFavorites() {
   );
 
   favoritesGrid.innerHTML = favorites.map((song) => `
-    <article class="favorite-card">
-      <div>
+    <article class="favorite-card editorial-song-card">
+      ${songArtwork(song)}
+      <div class="editorial-card-copy">
         <p class="eyebrow dark">${ui("SAVED", "お気に入り")}</p>
         <h3>${escapeHtml(songTitle(song))}</h3>
         <p class="meta">${escapeHtml(songArtist(song))}</p>
-      </div>
-      <div class="actions">
-        <button class="action primary" onclick="window.openRating(${song.id})">
-          ${ui("Listen", "聴いてみる")}
-        </button>
-        ${favoriteButton(song)}
+        <div class="actions">
+          <button class="action primary" onclick="window.openRating(${song.id})">
+            ${ui("Listen", "聴いてみる")}
+          </button>
+          ${favoriteButton(song)}
           ${similarButton(song)}
+        </div>
       </div>
     </article>
   `).join("") || `
@@ -1754,22 +1784,25 @@ function renderPersonalized() {
       .join(" · ");
 
     return `
-      <article class="personalized-card">
-        <p class="personalized-score">${Math.round(song.recommendationScore)}% MATCH</p>
-        <h3>${escapeHtml(songTitle(song))}</h3>
-        <p class="meta">${escapeHtml(songArtist(song))}</p>
-        <p class="personalized-reason">
-          ${reasons
-            ? ui("Because you like ", "おすすめ理由：") + reasons
-            : ui("Selected from the Hidden Gem ranking", "隠れた名曲スコアから選出")}
-        </p>
-        <div class="actions">
-          <button class="action primary" onclick="window.openRating(${song.id})">
-            ${ui("Listen", "聴いてみる")}
-          </button>
-          ${favoriteButton(song)}
-          ${similarButton(song)}
-          ${notInterestedButton(song)}
+      <article class="personalized-card editorial-song-card">
+        ${songArtwork(song)}
+        <div class="editorial-card-copy">
+          <p class="personalized-score">${Math.round(song.recommendationScore)}% MATCH</p>
+          <h3>${escapeHtml(songTitle(song))}</h3>
+          <p class="meta">${escapeHtml(songArtist(song))}</p>
+          <p class="personalized-reason">
+            ${reasons
+              ? ui("Because you like ", "おすすめ理由：") + reasons
+              : ui("Selected from the Hidden Gem ranking", "隠れた名曲スコアから選出")}
+          </p>
+          <div class="actions">
+            <button class="action primary" onclick="window.openRating(${song.id})">
+              ${ui("Listen", "聴いてみる")}
+            </button>
+            ${favoriteButton(song)}
+            ${similarButton(song)}
+            ${notInterestedButton(song)}
+          </div>
         </div>
       </article>
     `;

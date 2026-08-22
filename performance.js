@@ -24,9 +24,17 @@ function performanceCard(song, index) {
   const scoreSuffix = song.score === null ? "" : " / 100";
 
   return `
-    <article class="card">
-      <div class="rank">${String(index + 1).padStart(2, "0")}</div>
-      <div>
+    <article class="card editorial-ranking-card">
+      <div class="ranking-artwork-wrap">
+        ${songArtwork(song, "ranking-artwork")}
+        <span class="rank">${String(index + 1).padStart(2, "0")}</span>
+        <div class="artwork-score">
+          <strong>${scoreText}</strong>
+          <span>${ui("Hidden Gem Score", "隠れた名曲スコア")}${scoreSuffix}</span>
+        </div>
+      </div>
+      <div class="ranking-card-copy">
+        <p class="eyebrow dark">${ui("JAPAN HIDDEN GEM", "日本の隠れた名曲")}</p>
         <h3>${escapeHtml(songTitle(song))}</h3>
         <div class="meta">
           ${escapeHtml(songArtist(song))}
@@ -34,39 +42,29 @@ function performanceCard(song, index) {
         </div>
 
         <div class="metrics">
-          <p>${ui("Japan recommendation:", "日本での推薦率：")} <strong>${metric(song.japan, "%")}</strong></p>
-          <p>${ui("Overseas awareness:", "海外での認知度：")} <strong>${metric(song.awareness, "%")}</strong></p>
-          <p>${ui("Overseas post-listening rating:", "海外での視聴後評価：")} <strong>${metric(song.overseas, " / 5")}</strong></p>
+          <p><span>${ui("Japan recommendation", "日本での推薦率")}</span><strong>${metric(song.japan, "%")}</strong></p>
+          <p><span>${ui("Overseas awareness", "海外での認知度")}</span><strong>${metric(song.awareness, "%")}</strong></p>
+          <p><span>${ui("Post-listening rating", "視聴後評価")}</span><strong>${metric(song.overseas, " / 5")}</strong></p>
         </div>
 
         <div class="score-row">
-          <strong>${scoreText}</strong>
-          <span>${ui("Hidden Gem Score", "隠れた名曲スコア")} ${scoreSuffix}</span>
           ${song.score !== null && song.provisional ? '<span class="badge">Provisional</span>' : ""}
         </div>
 
         <p class="sample-note">
           ${song.recommendationTotal} ${ui("Japan votes", "件の日本投票")} ·
           ${song.overseasTotal} ${ui("overseas responses", "件の海外回答")} ·
-          ${song.postListenRatingCount} ${ui("post-listening ratings", "件の視聴後評価")}
+          ${song.postListenRatingCount} ${ui("ratings", "件の評価")}
         </p>
 
         <div class="actions">
           <button class="action primary overseas-action" onclick="window.openRating(${song.id})">
-            Listen & Rate
+            ${ui("Listen & Rate", "聴いて評価")}
           </button>
-
-          <button
-            class="action japan-action ${recommended === true ? "selected" : ""}"
-            onclick="window.submitRecommendation(${song.id}, true)"
-          >
+          <button class="action japan-action ${recommended === true ? "selected" : ""}" onclick="window.submitRecommendation(${song.id}, true)">
             ${recommended === true ? ui("Recommended ✓", "推薦済み ✓") : ui("Recommend", "推薦する")}
           </button>
-
-          <button
-            class="action japan-action ${recommended === false ? "selected" : ""}"
-            onclick="window.submitRecommendation(${song.id}, false)"
-          >
+          <button class="action japan-action ${recommended === false ? "selected" : ""}" onclick="window.submitRecommendation(${song.id}, false)">
             ${recommended === false ? ui("Not for me ✓", "推薦しない ✓") : ui("Not for me", "推薦しない")}
           </button>
         </div>
