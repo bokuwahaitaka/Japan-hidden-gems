@@ -21,6 +21,8 @@ let selectedSongTag = null;
 let personalizedRecommendations = [];
 let favoriteSongIds = new Set();
 let notInterestedSongIds = new Set();
+let currentView = "home";
+let activeRatingSongId = null;
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -83,11 +85,85 @@ function setText(selector, value) {
   if (element) element.textContent = value;
 }
 
+const VALID_VIEWS = new Set(["home", "ranking", "personalized", "favorites", "request", "listen"]);
+
+function routeFromLocation() {
+  const requested = new URLSearchParams(window.location.search).get("view");
+  return VALID_VIEWS.has(requested) ? requested : "home";
+}
+
+function songFromLocation() {
+  const value = Number(new URLSearchParams(window.location.search).get("song"));
+  return Number.isInteger(value) && value > 0 ? value : null;
+}
+
+function routeUrl(view, songId = null) {
+  const url = new URL(window.location.href);
+  if (view === "home") url.searchParams.delete("view");
+  else url.searchParams.set("view", view);
+  if (view === "listen" && songId) url.searchParams.set("song", String(songId));
+  else url.searchParams.delete("song");
+  return url;
+}
+
+function syncListenView() {
+  document.querySelectorAll("#ratingSections [data-song-id]").forEach((section) => {
+    section.classList.toggle("is-active-rating", Number(section.dataset.songId) === activeRatingSongId);
+  });
+}
+
+function renderView(view, options = {}) {
+  const nextView = VALID_VIEWS.has(view) ? view : "home";
+  currentView = nextView;
+  activeRatingSongId = nextView === "listen" ? Number(options.songId || songFromLocation()) || null : null;
+
+  document.querySelectorAll("[data-screen]").forEach((screen) => {
+    screen.classList.toggle("is-active", screen.dataset.screen === nextView);
+  });
+
+  const activeNavView = nextView === "listen" ? "ranking" : nextView;
+  document.querySelectorAll("[data-route]").forEach((item) => {
+    const active = item.dataset.route === activeNavView;
+    item.classList.toggle("is-active", active);
+    if (active) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  });
+
+  syncListenView();
+  window.scrollTo({ top: 0, behavior: "auto" });
+}
+
+function navigateTo(view, options = {}) {
+  const nextView = VALID_VIEWS.has(view) ? view : "home";
+  const songId = nextView === "listen" ? Number(options.songId) || null : null;
+  const state = { jhgRoute: true, view: nextView, songId, fromView: currentView };
+  window.history[options.replace ? "replaceState" : "pushState"](state, "", routeUrl(nextView, songId));
+  renderView(nextView, { songId });
+}
+
+function initializeRouter() {
+  const view = routeFromLocation();
+  const songId = songFromLocation();
+  window.history.replaceState({ jhgRoute: true, view, songId, fromView: null }, "", routeUrl(view, songId));
+  renderView(view, { songId });
+  window.addEventListener("popstate", () => renderView(routeFromLocation(), { songId: songFromLocation() }));
+}
+
+function goBackFromListen() {
+  if (window.history.state?.fromView) window.history.back();
+  else navigateTo("ranking", { replace: true });
+}
+
 function applyInterfaceLanguage(type = audience) {
   const ja = type === "japan";
   document.documentElement.lang = ja ? "ja" : "en";
   const copy = {
     "#accountBtn": ["Account", "アカウント"],
+    "#homeNavLabel": ["Home", "ホーム"],
+    "#rankingNavLabel": ["Ranking", "ランキング"],
+    "#personalizedNavLabel": ["For You", "おすすめ"],
+    "#requestNavLabel": ["Recommend", "曲を推薦"],
+    "#listenBackBtn": ["← Back", "← 戻る"],
     "#aboutBtn": ["How it works", "仕組み"],
     "#similarEyebrow": ["SIMILAR SONGS", "似ている曲"],
     "#similarSongsTitle": ["More songs like this", "この曲に似ている曲"],
@@ -2110,6 +2186,8 @@ function renderRatingSections(
         `;
       })
       .join("");
+
+  syncListenView();
 }
 
 
@@ -2576,20 +2654,8 @@ async function submitRating(
    AUDIENCE
 ========================= */
 
-function openRating(
-  songId
-) {
-  document
-    .querySelector(
-      `[data-song-id="${songId}"]`
-    )
-    ?.scrollIntoView({
-      behavior:
-        "smooth",
-
-      block:
-        "start"
-    });
+function openRating(songId) {
+  navigateTo("listen", { songId });
 }
 
 function setAudience(
@@ -2622,18 +2688,9 @@ function setAudience(
     );
 
   if (scroll) {
-    (
-      type === "japan"
-        ? $("#ranking")
-        : $("#ratingSections")
-    )
-      ?.scrollIntoView({
-        behavior:
-          "smooth",
-
-        block:
-          "start"
-      });
+    navigateTo(type === "japan" ? "request" : "ranking");
+  } else if (type !== "japan" && currentView === "request") {
+    navigateTo("ranking", { replace: true });
   }
 }
 
@@ -2661,10 +2718,7 @@ function resetAudience() {
       "hidden"
     );
 
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
+  navigateTo("home");
 }
 
 /* =========================
@@ -2747,10 +2801,14 @@ function wireUi() {
       signOutMember
     );
 
-  $("#favoritesBtn")
+  document.querySelectorAll("[data-route]").forEach((item) => {
+    item.addEventListener("click", () => navigateTo(item.dataset.route));
+  });
+
+  $("#listenBackBtn")
     ?.addEventListener(
       "click",
-      () => $("#myFavorites")?.scrollIntoView({ behavior: "smooth", block: "start" })
+      goBackFromListen
     );
 
   $("#aboutBtn")
@@ -2852,6 +2910,7 @@ async function start() {
     );
 
     consumeAuthCallback();
+    initializeRouter();
     await ensureAnonymousUser();
     syncAccountUi();
 
