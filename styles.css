@@ -824,3 +824,63 @@ footer{border-top:8px solid var(--accent)}
   .playlist-song-row>.action{grid-column:2}
   .playlist-song-row .feature-song-card{grid-template-columns:90px minmax(0,1fr)}
 }
+
+
+/* 2026 catalog typography refinement */
+:root{
+  --font-sans:"Avenir Next","Helvetica Neue","Hiragino Sans","Yu Gothic UI","Yu Gothic",Arial,sans-serif;
+  --font-display:"Avenir Next","Helvetica Neue","Hiragino Sans","Yu Gothic UI","Yu Gothic",Arial,sans-serif;
+}
+html{font-size:16px}
+body{font-family:var(--font-sans);font-size:1rem;line-height:1.65;letter-spacing:.005em}
+button,input,select,textarea{font-family:inherit}
+h1,h2,h3,.brand,.rank,.stats strong{
+  font-family:var(--font-display);
+  font-weight:750;
+  letter-spacing:-.035em;
+}
+.hero h1{
+  max-width:720px;
+  font-size:clamp(2.8rem,5.2vw,5.8rem);
+  line-height:.96;
+  letter-spacing:-.055em;
+}
+.hero .lead{max-width:620px;font-size:clamp(1rem,1.5vw,1.2rem);line-height:1.65}
+.audience-card h2{font-size:clamp(2rem,3.2vw,3.25rem);line-height:1}
+.section-head h2{font-size:clamp(2.25rem,4vw,4.25rem);line-height:.98}
+.section h2{font-size:clamp(2rem,3.6vw,3.7rem);line-height:1.04}
+.card h3,.editorial-song-card h3{font-size:clamp(1.2rem,1.7vw,1.55rem);line-height:1.25;letter-spacing:-.02em}
+.rating-inner h2,.song-detail-copy h1{font-size:clamp(2.25rem,4.6vw,4.8rem);line-height:1}
+.stats strong{font-size:clamp(2rem,3.2vw,2.75rem)}
+.eyebrow{font-size:.72rem;letter-spacing:.16em}
+.nav-item,.button,.action{font-size:.88rem;letter-spacing:.01em}
+.seed-baseline-notice{
+  margin:18px 0 0;
+  max-width:900px;
+  padding:14px 16px;
+  border:1px solid rgba(226,75,45,.38);
+  background:rgba(226,75,45,.07);
+  color:#6d3328;
+  font-size:.86rem;
+  line-height:1.55;
+}
+.seed-score-badge{
+  display:inline-flex;
+  width:max-content;
+  margin-top:12px;
+  padding:5px 8px;
+  border:1px solid rgba(226,75,45,.45);
+  color:var(--accent);
+  font-size:.64rem;
+  font-weight:850;
+  letter-spacing:.11em;
+}
+@media (max-width:720px){
+  html{font-size:15px}
+  .hero h1{font-size:clamp(2.5rem,12vw,3.7rem)}
+  .hero-grid{gap:34px}
+  .section{padding:64px 0}
+  .section-head h2,.section h2{font-size:clamp(2rem,9vw,3rem)}
+  .audience-card h2{font-size:clamp(1.85rem,8vw,2.6rem)}
+  .card h3,.editorial-song-card h3{font-size:1.15rem}
+}
