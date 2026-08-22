@@ -82,6 +82,7 @@ function applyInterfaceLanguage(type = audience) {
   const ja = type === "japan";
   document.documentElement.lang = ja ? "ja" : "en";
   const copy = {
+    "#accountBtn": ["Account", "アカウント"],
     "#aboutBtn": ["How it works", "仕組み"],
     "#heroEyebrow": ["CROSS-CULTURAL MUSIC DISCOVERY", "日本の隠れた名曲を世界へ"],
     "#heroTitle": ["Japanese songs the world hasn’t found yet.", "まだ世界に知られていない日本の名曲を届けよう。"],
@@ -114,7 +115,18 @@ function applyInterfaceLanguage(type = audience) {
     "#requestCopy": ["Enter a song title, choose the correct video from three YouTube results, and add it to the ranking immediately.", "曲名を入力し、YouTubeの候補3件から正しい動画を選んでください。選んだ曲はすぐランキングに追加されます。"],
     "#songSearchLabel": ["Song title", "曲名"],
     "#songSearchSubmit": ["Search", "YouTubeで検索"],
-    "#requestLimitCopy": ["Check the title and channel before choosing a video.", "選択前に動画名とチャンネルを確認してください。"]
+    "#requestLimitCopy": ["Check the title and channel before choosing a video.", "選択前に動画名とチャンネルを確認してください。"],
+    "#authEyebrow": ["ACCOUNT", "アカウント"],
+    "#authTitle": ["Keep your hidden gems with you.", "お気に入りをどの端末でも。"],
+    "#authCopy": ["Create an account to sync favorites across browsers and devices. You can keep using the site anonymously.", "アカウントを作ると、お気に入りをブラウザや端末間で同期できます。匿名のままでも利用できます。"],
+    "#authEmailLabel": ["Email", "メールアドレス"],
+    "#authPasswordLabel": ["Password", "パスワード"],
+    "#authPasswordHint": ["Use at least 8 characters.", "8文字以上で入力してください。"],
+    "#signInButton": ["Log in", "ログイン"],
+    "#createAccountButton": ["Create account", "新規登録"],
+    "#authGuestNote": ["Anonymous use stays available. Creating an account keeps the current browser’s favorites and responses.", "匿名利用も継続できます。新規登録すると、このブラウザのお気に入りと回答をそのまま引き継ぎます。"],
+    "#authSignedInLabel": ["Signed in as", "ログイン中"],
+    "#signOutButton": ["Log out", "ログアウト"]
   };
   Object.entries(copy).forEach(([selector, values]) => setText(selector, ja ? values[1] : values[0]));
   const input = $("#songSearchTitle");
@@ -358,6 +370,159 @@ async function ensureAnonymousUser() {
 
   currentUser =
     created.user;
+}
+
+
+function applySession(session) {
+  if (!session?.access_token || !session?.user?.id) {
+    throw new Error("The account session was not returned.");
+  }
+
+  saveSession(session);
+  accessToken = session.access_token;
+  currentUser = session.user;
+  syncAccountUi();
+}
+
+function consumeAuthCallback() {
+  if (!window.location.hash.includes("access_token=")) return false;
+
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const accessTokenFromUrl = params.get("access_token");
+  const refreshTokenFromUrl = params.get("refresh_token");
+
+  if (!accessTokenFromUrl || !refreshTokenFromUrl) return false;
+
+  saveSession({
+    access_token: accessTokenFromUrl,
+    refresh_token: refreshTokenFromUrl,
+    token_type: params.get("token_type") || "bearer",
+    expires_in: Number(params.get("expires_in") || 3600)
+  });
+
+  history.replaceState(null, "", window.location.pathname + window.location.search);
+  return true;
+}
+
+function isMemberAccount() {
+  return Boolean(currentUser?.email && currentUser?.is_anonymous !== true);
+}
+
+function syncAccountUi() {
+  const member = isMemberAccount();
+  $("#authGuestPanel")?.classList.toggle("hidden", member);
+  $("#authMemberPanel")?.classList.toggle("hidden", !member);
+
+  const email = $("#accountEmail");
+  if (email) email.textContent = currentUser?.email || "";
+
+  const button = $("#accountBtn");
+  if (button) {
+    button.dataset.member = member ? "true" : "false";
+    button.setAttribute("aria-label", member ? ui("Account settings", "アカウント設定") : ui("Log in or create an account", "ログインまたは新規登録"));
+  }
+}
+
+function openAccountDialog() {
+  syncAccountUi();
+  const error = $("#authError");
+  if (error) error.textContent = "";
+  $("#authDialog")?.showModal();
+}
+
+async function reloadForCurrentUser() {
+  listenerProfile = null;
+  selectedGenreIds = [];
+  favoriteSongIds = new Set();
+  await loadListenerProfile();
+  await loadDemographicOptions();
+  await loadAll();
+}
+
+async function signInWithPassword(event) {
+  event.preventDefault();
+
+  const email = $("#authEmail").value.trim();
+  const password = $("#authPassword").value;
+  const error = $("#authError");
+  error.textContent = "";
+
+  await withBusy(async () => {
+    try {
+      const session = await authRequest("token?grant_type=password", {
+        method: "POST",
+        body: JSON.stringify({ email, password })
+      });
+
+      applySession(session);
+      await reloadForCurrentUser();
+      $("#authDialog")?.close();
+      showStatus(ui("Logged in. Your saved songs are synced.", "ログインしました。お気に入りを同期しました。"), "success");
+    } catch (loginError) {
+      console.error(loginError);
+      error.textContent = ui("Could not log in: ", "ログインできませんでした：") + loginError.message;
+    }
+  });
+}
+
+async function createMemberAccount() {
+  const email = $("#authEmail").value.trim();
+  const password = $("#authPassword").value;
+  const error = $("#authError");
+  error.textContent = "";
+
+  if (!email || password.length < 8) {
+    error.textContent = ui("Enter an email address and a password of at least 8 characters.", "メールアドレスと8文字以上のパスワードを入力してください。");
+    return;
+  }
+
+  await withBusy(async () => {
+    try {
+      const user = await authRequest("user", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          email,
+          password,
+          data: { account_created_from: "japan-hidden-gems" }
+        })
+      });
+
+      currentUser = user;
+      const stored = readSession();
+      if (stored) saveSession({ ...stored, user });
+
+      syncAccountUi();
+      showStatus(ui("Confirmation email sent. Open it to finish creating your account.", "確認メールを送信しました。メール内のリンクを開くと登録完了です。"), "success", true);
+      error.textContent = ui("Check your inbox and open the confirmation link.", "受信箱を確認し、確認リンクを開いてください。");
+    } catch (signupError) {
+      console.error(signupError);
+      error.textContent = ui("Could not create the account: ", "新規登録できませんでした：") + signupError.message;
+    }
+  });
+}
+
+async function signOutMember() {
+  await withBusy(async () => {
+    try {
+      if (accessToken) {
+        await authRequest("logout", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+      }
+    } catch (logoutError) {
+      console.warn("Remote logout failed:", logoutError);
+    }
+
+    clearSession();
+    accessToken = null;
+    currentUser = null;
+    await ensureAnonymousUser();
+    await reloadForCurrentUser();
+    $("#authDialog")?.close();
+    showStatus(ui("Logged out. You are now using an anonymous session.", "ログアウトしました。現在は匿名で利用しています。"), "success");
+  });
 }
 
 /* =========================
@@ -2206,6 +2371,36 @@ function wireUi() {
   const dialog =
     $("#aboutDialog");
 
+  $("#accountBtn")
+    ?.addEventListener(
+      "click",
+      openAccountDialog
+    );
+
+  $("#closeAuthDialog")
+    ?.addEventListener(
+      "click",
+      () => $("#authDialog")?.close()
+    );
+
+  $("#authForm")
+    ?.addEventListener(
+      "submit",
+      signInWithPassword
+    );
+
+  $("#createAccountButton")
+    ?.addEventListener(
+      "click",
+      createMemberAccount
+    );
+
+  $("#signOutButton")
+    ?.addEventListener(
+      "click",
+      signOutMember
+    );
+
   $("#favoritesBtn")
     ?.addEventListener(
       "click",
@@ -2307,7 +2502,9 @@ async function start() {
       true
     );
 
+    consumeAuthCallback();
     await ensureAnonymousUser();
+    syncAccountUi();
 
     await loadListenerProfile();
 
