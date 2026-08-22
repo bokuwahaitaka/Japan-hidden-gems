@@ -387,6 +387,26 @@ function renderDiscover() {
   }
 }
 
+function artistDirectoryImage(artistSongs, size = "card") {
+  const artistName = songArtist(artistSongs[0]);
+  const artistImage = artistSongs.find((song) => song.artist_image_url)?.artist_image_url;
+  const artworkSong = artistSongs.find((song) => song.youtube_thumbnail_url || song.youtube_video_id || song.youtube_url);
+  const artwork = artistImage || (artworkSong ? songArtworkUrl(artworkSong) : "");
+  const fallback = escapeHtml((artistName || "J").trim().slice(0, 1).toUpperCase());
+
+  if (!artwork) {
+    return `<span class="artist-directory-image artist-directory-image--${size} artist-directory-image--fallback" aria-hidden="true">${fallback}</span>`;
+  }
+
+  return `
+    <span class="artist-directory-image artist-directory-image--${size}${artistImage ? "" : " artist-directory-image--artwork"}">
+      <img src="${escapeHtml(artwork)}" alt="" loading="lazy" decoding="async"
+        onerror="this.closest('.artist-directory-image').classList.add('artist-directory-image--failed');this.remove()">
+      <span class="artist-directory-image-fallback" aria-hidden="true">${fallback}</span>
+    </span>
+  `;
+}
+
 function renderArtists(selectedArtist = null) {
   const target = document.querySelector("#artistFeatureContent");
   if (!target) return;
@@ -405,9 +425,12 @@ function renderArtists(selectedArtist = null) {
     target.innerHTML = `
       <button class="text-button" type="button" onclick="window.openArtistIndex()">← ${featureText("All artists", "アーティスト一覧")}</button>
       <div class="artist-profile-head">
-        <p class="eyebrow dark">ARTIST PROFILE</p>
-        <h3>${escapeHtml(interfaceLanguage === "en" ? songArtist(artistSongs[0]) : artist)}</h3>
-        <p class="meta">${artistSongs.length} ${featureText("registered songs", "曲を登録")}</p>
+        ${artistDirectoryImage(artistSongs, "profile")}
+        <div class="artist-profile-copy">
+          <p class="eyebrow dark">ARTIST PROFILE</p>
+          <h3>${escapeHtml(interfaceLanguage === "en" ? songArtist(artistSongs[0]) : artist)}</h3>
+          <p class="meta">${artistSongs.length} ${featureText("registered songs", "曲を登録")}</p>
+        </div>
       </div>
       <div class="feature-grid">${artistSongs.map((song) => featureCard(song)).join("")}</div>
     `;
@@ -420,8 +443,11 @@ function renderArtists(selectedArtist = null) {
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([name, artistSongs]) => `
           <button class="artist-index-card" type="button" onclick="window.openArtistPage('${encodeURIComponent(name)}')">
-            <strong>${escapeHtml(interfaceLanguage === "en" ? songArtist(artistSongs[0]) : name)}</strong>
-            <span>${artistSongs.length} ${featureText("songs", "曲")}</span>
+            ${artistDirectoryImage(artistSongs)}
+            <span class="artist-index-copy">
+              <strong>${escapeHtml(interfaceLanguage === "en" ? songArtist(artistSongs[0]) : name)}</strong>
+              <span>${artistSongs.length} ${featureText("songs", "曲")}</span>
+            </span>
           </button>
         `).join("")}
     </div>
