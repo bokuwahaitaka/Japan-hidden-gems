@@ -753,7 +753,7 @@ async function loadAll() {
     );
   }
 
-  const [rows, hiddenRows] =
+  const [rows, hiddenRows, tagRows] =
     await Promise.all([
       rest(
         "rpc/get_hidden_gem_data_segment",
@@ -774,6 +774,14 @@ async function loadAll() {
           authenticated: true,
           body: JSON.stringify({})
         }
+      ),
+      rest(
+        "rpc/get_public_song_tags",
+        {
+          method: "POST",
+          authenticated: true,
+          body: JSON.stringify({})
+        }
       )
     ]);
 
@@ -783,6 +791,13 @@ async function loadAll() {
         (row) => Number(row.id)
       )
     );
+
+  const tagsBySong = new Map(
+    (tagRows ?? []).map((row) => [
+      Number(row.song_id),
+      Array.isArray(row.tags) ? row.tags : []
+    ])
+  );
 
   songs =
     (rows ?? [])
@@ -907,6 +922,9 @@ async function loadAll() {
 
         youtube_url:
           row.youtube_url,
+
+        tags:
+          tagsBySong.get(Number(row.id)) ?? [],
 
         japan,
         awareness,
@@ -1126,6 +1144,16 @@ function render() {
                   ${escapeHtml(song.artist)}
                   ${song.year ? " · " + escapeHtml(song.year) : ""}
                 </div>
+
+                ${song.tags?.length ? `
+                  <div class="song-tags">
+                    ${song.tags.map((tag) => `
+                      <span class="song-tag-pill">
+                        ${escapeHtml(ui(tag.label_en, tag.label_ja))}
+                      </span>
+                    `).join("")}
+                  </div>
+                ` : ""}
 
                 <div class="metrics">
 
