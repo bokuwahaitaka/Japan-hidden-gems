@@ -96,6 +96,26 @@ const EXPERIENCE_COPY = {
   }
 };
 
+const EXPERIENCE_UI = {
+  "Explore": { ko:"둘러보기", zh:"探索", ru:"Обзор", es:"Explorar", fr:"Explorer" },
+  "Artists": { ko:"아티스트", zh:"艺人", ru:"Исполнители", es:"Artistas", fr:"Artistes" },
+  "Playlists": { ko:"플레이리스트", zh:"播放列表", ru:"Плейлисты", es:"Listas", fr:"Playlists" },
+  "History": { ko:"감상 기록", zh:"收听记录", ru:"История", es:"Historial", fr:"Historique" },
+  "Listen": { ko:"듣기", zh:"试听", ru:"Слушать", es:"Escuchar", fr:"Écouter" },
+  "+ Playlist": { ko:"＋플레이리스트", zh:"＋播放列表", ru:"＋Плейлист", es:"＋Lista", fr:"＋Playlist" },
+  "All artists": { ko:"모든 아티스트", zh:"所有艺人", ru:"Все исполнители", es:"Todos los artistas", fr:"Tous les artistes" },
+  "registered songs": { ko:"곡 등록", zh:"首已收录", ru:"треков", es:"canciones registradas", fr:"titres enregistrés" },
+  "songs": { ko:"곡", zh:"首歌曲", ru:"песен", es:"canciones", fr:"titres" },
+  "Open ranking →": { ko:"랭킹 열기 →", zh:"打开排行榜 →", ru:"Открыть рейтинг →", es:"Abrir clasificación →", fr:"Voir le classement →" },
+  "Loading…": { ko:"불러오는 중…", zh:"加载中…", ru:"Загрузка…", es:"Cargando…", fr:"Chargement…" }
+};
+
+const originalExperienceUi = ui;
+ui = function(en, ja) {
+  if (interfaceLanguage === "ja") return ja;
+  return EXPERIENCE_UI[en]?.[interfaceLanguage] || en;
+};
+
 const EXPERIENCE_STATIC = {
   "#homeNavLabel": { ko:"홈", zh:"首页", ru:"Главная", es:"Inicio", fr:"Accueil" },
   "#rankingNavLabel": { ko:"랭킹", zh:"排行榜", ru:"Рейтинг", es:"Clasificación", fr:"Classement" },
