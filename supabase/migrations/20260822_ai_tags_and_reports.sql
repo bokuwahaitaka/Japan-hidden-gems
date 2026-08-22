@@ -292,7 +292,7 @@ language sql
 stable
 security definer
 set search_path = public, pg_temp
-as $
+as $song_tags$
   select
     a.song_id,
     jsonb_agg(
@@ -308,7 +308,7 @@ as $
   join public.song_tags t on t.id = a.tag_id and t.is_active
   join public.songs s on s.id = a.song_id and s.is_hidden = false
   group by a.song_id;
-$;
+$song_tags$;
 
 revoke all on function public.get_public_song_tags() from public;
 revoke all on function public.submit_song_tag_report(bigint, text, text) from public;
