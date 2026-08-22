@@ -70,7 +70,7 @@ async function loadSongs() {
   $("#adminStatus").textContent = "読み込み中…";
   try {
     const [songs, tags, reports] = await Promise.all([
-      rpc("admin_list_songs_v2"),
+      rpc("admin_list_songs_v3"),
       rpc("admin_list_song_tags"),
       rpc("admin_list_tag_reports")
     ]);
@@ -202,8 +202,17 @@ async function invokeAutoTag(videoId) {
 async function backfillAiTags() {
   const button = $("#backfillTags");
   const candidates = adminSongs
-    .map((song) => ({ song, videoId: youtubeVideoId(song.youtube_url) }))
-    .filter((item) => item.videoId);
+    .map((song) => ({
+      song,
+      videoId: song.youtube_video_id || youtubeVideoId(song.youtube_url)
+    }))
+    .filter((item) =>
+      item.videoId &&
+      (
+        item.song.ai_tag_status !== "completed" ||
+        !(item.song.tag_ids || []).length
+      )
+    );
 
   if (!candidates.length) {
     $("#adminStatus").textContent = "処理できるYouTube曲がありません。";
@@ -220,7 +229,8 @@ async function backfillAiTags() {
     const item = candidates[index];
     $("#adminStatus").textContent =
       "AIタグ付け中 " + (index + 1) + " / " + candidates.length +
-      "：" + item.song.title;
+      "：" + item.song.title +
+      "（途中で閉じても、次回は未完了分から再開できます）";
 
     try {
       await invokeAutoTag(item.videoId);
@@ -230,7 +240,7 @@ async function backfillAiTags() {
       failed += 1;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await new Promise((resolve) => setTimeout(resolve, 900));
   }
 
   button.disabled = false;
