@@ -405,3 +405,40 @@ main{min-height:calc(100vh - 64px)}
   .header-actions .button{padding:8px 10px;font-size:.72rem}
   .nav-item{padding:9px 11px;font-size:.78rem}
 }
+
+
+/* Language switcher */
+.language-control{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin-left:6px;
+  padding-left:12px;
+  border-left:1px solid var(--line);
+  color:var(--muted);
+  font-size:.76rem;
+  font-weight:800;
+  white-space:nowrap;
+}
+.language-control select{
+  appearance:none;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:8px 28px 8px 11px;
+  color:var(--ink);
+  background:
+    linear-gradient(45deg,transparent 50%,var(--muted) 50%) calc(100% - 13px) 50%/5px 5px no-repeat,
+    linear-gradient(135deg,var(--muted) 50%,transparent 50%) calc(100% - 9px) 50%/5px 5px no-repeat,
+    var(--paper);
+  font-size:.8rem;
+  font-weight:800;
+  cursor:pointer;
+}
+.language-control select:focus-visible{
+  outline:3px solid rgba(201,75,50,.22);
+  outline-offset:2px;
+  border-color:var(--accent);
+}
+@media(max-width:980px){
+  .language-control{margin-left:auto}
+}

@@ -21,6 +21,7 @@ let selectedSongTag = null;
 let personalizedRecommendations = [];
 let favoriteSongIds = new Set();
 let notInterestedSongIds = new Set();
+let interfaceLanguage = ["ja", "en"].includes(localStorage.getItem("jhg_interface_language_v1")) ? localStorage.getItem("jhg_interface_language_v1") : null;
 let currentView = "home";
 let activeRatingSongId = null;
 
@@ -41,6 +42,7 @@ const SESSION_KEY = "jhg_supabase_session_v1";
 const PENDING_ACCOUNT_KEY = "jhg_pending_account_email_v1";
 const PENDING_PASSWORD_KEY = "jhg_pending_account_password_v1";
 const PENDING_RESET_KEY = "jhg_pending_password_reset_v1";
+const LANGUAGE_KEY = "jhg_interface_language_v1";
 
 /* =========================
    GENERAL
@@ -77,7 +79,20 @@ function showStatus(
 
 
 function ui(en, ja) {
-  return audience === "japan" ? ja : en;
+  return interfaceLanguage === "ja" ? ja : en;
+}
+
+function songTitle(song) {
+  if (interfaceLanguage === "en" && song?.title_en?.trim()) {
+    return song.title_en.trim();
+  }
+  return song?.title ?? "";
+}
+
+function setInterfaceLanguage(language, persist = true) {
+  interfaceLanguage = language === "ja" ? "ja" : "en";
+  if (persist) localStorage.setItem(LANGUAGE_KEY, interfaceLanguage);
+  applyInterfaceLanguage(interfaceLanguage);
 }
 
 function setText(selector, value) {
@@ -154,11 +169,35 @@ function goBackFromListen() {
   else navigateTo("ranking", { replace: true });
 }
 
-function applyInterfaceLanguage(type = audience) {
-  const ja = type === "japan";
+function applyInterfaceLanguage(language = interfaceLanguage || (audience === "japan" ? "ja" : "en")) {
+  const ja = language === "ja" || language === "japan";
+  interfaceLanguage = ja ? "ja" : "en";
+  document.documentElement.dataset.language = interfaceLanguage;
   document.documentElement.lang = ja ? "ja" : "en";
   const copy = {
     "#accountBtn": ["Account", "アカウント"],
+    "#languageLabel": ["Language", "言語"],
+    "#sortScoreOption": ["Highest Hidden Gem Score", "隠れた名曲スコア順"],
+    "#sortJapanOption": ["Highest Japan Recommendation", "日本での推薦率順"],
+    "#sortAwarenessOption": ["Lowest Overseas Awareness", "海外認知度が低い順"],
+    "#sortRatingOption": ["Highest Overseas Rating", "海外評価順"],
+    "#methodEyebrow": ["METHOD", "評価方法"],
+    "#methodTitle": ["What makes a hidden gem?", "隠れた名曲とは？"],
+    "#methodCopy": ["A song ranks highly when Japanese listeners recommend it, overseas listeners rarely knew it beforehand, and people outside Japan rate it highly after listening.", "日本のリスナーから推薦され、海外でまだあまり知られておらず、聴いた後の評価が高い曲ほど上位になります。"],
+    "#methodNote": ["Early results are marked provisional until enough responses are collected.", "十分な回答が集まるまでは暫定結果として表示されます。"],
+    "#profileEyebrow": ["ANONYMOUS LISTENER PROFILE", "匿名リスナープロフィール"],
+    "#profileTitle": ["Tell us about your listening", "あなたの音楽の聴き方を教えてください"],
+    "#profileCountryLabel": ["Country or region", "国・地域"],
+    "#profileCountryHint": ["Use the two-letter country code. Japan is JP.", "2文字の国コードを入力してください。日本はJPです。"],
+    "#profileAgeLabel": ["Age band", "年齢層"],
+    "#profileGenresLabel": ["Genres you enjoy", "好きなジャンル"],
+    "#profileGenresHint": ["Choose 1–5.", "1〜5個選択してください。"],
+    "#profilePrivacy": ["Saved to your anonymous survey profile. We do not ask for your name or exact age.", "匿名プロフィールとして保存します。氏名や正確な年齢は尋ねません。"],
+    "#profileSubmitButton": ["Save and continue", "保存して続ける"],
+    "#aboutEyebrow": ["ABOUT", "このサイトについて"],
+    "#aboutTitle": ["Discovery before popularity.", "人気になる前の音楽を発見する。"],
+    "#aboutCopy": ["Each browser gets an anonymous Supabase user. You can update your previous response by choosing again.", "ブラウザごとに匿名ユーザーを作成し、同じ項目を選び直すと以前の回答を更新できます。"],
+    "#footerCopy": ["Prototype — no copyrighted audio or artwork is hosted here.", "試作版 — 著作権のある音源や画像はこのサイト上に保存していません。"],
     "#homeNavLabel": ["Home", "ホーム"],
     "#rankingNavLabel": ["Ranking", "ランキング"],
     "#personalizedNavLabel": ["For You", "おすすめ"],
@@ -221,8 +260,15 @@ function applyInterfaceLanguage(type = audience) {
     "#signOutButton": ["Log out", "ログアウト"]
   };
   Object.entries(copy).forEach(([selector, values]) => setText(selector, ja ? values[1] : values[0]));
+  const languageSelect = $("#languageSelect");
+  if (languageSelect) {
+    languageSelect.value = interfaceLanguage;
+    languageSelect.setAttribute("aria-label", ja ? "サイトの言語" : "Site language");
+  }
   const input = $("#songSearchTitle");
   if (input) input.placeholder = ja ? "例：プラスティック・ラブ" : "e.g. Plastic Love";
+  const countryInput = $("#profileCountry");
+  if (countryInput) countryInput.placeholder = ja ? "2文字コード（例：JP）" : "Two-letter code, e.g. US";
   renderDemographicOptions();
   if (songs.length) {
     render();
@@ -855,7 +901,7 @@ async function loadListenerProfile() {
 }
 
 function renderProfileForm(group) {
-  applyInterfaceLanguage(group);
+  applyInterfaceLanguage(interfaceLanguage || (group === "japan" ? "ja" : "en"));
 
   const dialog = $("#profileDialog");
   const country = $("#profileCountry");
@@ -1150,6 +1196,7 @@ async function loadAll() {
 
   const [
     rows,
+    titleRows,
     hiddenRows,
     tagRows,
     personalizedRows,
@@ -1167,6 +1214,10 @@ async function loadAll() {
             p_tag_id: selectedSongTag
           })
         }
+      ),
+      rest(
+        "songs?select=id,title_en",
+        { authenticated: true }
       ),
       rest(
         "rpc/get_hidden_song_ids",
@@ -1212,6 +1263,10 @@ async function loadAll() {
 
   notInterestedSongIds = new Set(
     (feedbackRows ?? []).map((row) => Number(row.song_id))
+  );
+
+  const englishTitles = new Map(
+    (titleRows ?? []).map((row) => [Number(row.id), row.title_en])
   );
 
   const hiddenSongIds =
@@ -1343,6 +1398,9 @@ async function loadAll() {
         title:
           row.title,
 
+        title_en:
+          englishTitles.get(Number(row.id)) ?? null,
+
         artist:
           row.artist,
 
@@ -1444,7 +1502,7 @@ async function openSimilarSongs(songId) {
   if (!sourceSong || !similarSongsGrid || !dialog) return;
 
   $("#similarSongsSource").textContent =
-    sourceSong.title + " — " + sourceSong.artist;
+    songTitle(sourceSong) + " — " + sourceSong.artist;
   similarSongsGrid.innerHTML =
     '<p class="muted">' + ui("Finding similar songs…", "似ている曲を探しています…") + "</p>";
   dialog.showModal();
@@ -1558,7 +1616,7 @@ function renderFavorites() {
     <article class="favorite-card">
       <div>
         <p class="eyebrow dark">${ui("SAVED", "お気に入り")}</p>
-        <h3>${escapeHtml(song.title)}</h3>
+        <h3>${escapeHtml(songTitle(song))}</h3>
         <p class="meta">${escapeHtml(song.artist)}</p>
       </div>
       <div class="actions">
@@ -1642,7 +1700,7 @@ function renderPersonalized() {
     return `
       <article class="personalized-card">
         <p class="personalized-score">${Math.round(song.recommendationScore)}% MATCH</p>
-        <h3>${escapeHtml(song.title)}</h3>
+        <h3>${escapeHtml(songTitle(song))}</h3>
         <p class="meta">${escapeHtml(song.artist)}</p>
         <p class="personalized-reason">
           ${reasons
@@ -1732,7 +1790,7 @@ function metric(
   suffix = ""
 ) {
   return value === null
-    ? "Collecting data"
+    ? ui("Collecting data", "集計中")
     : `${
         Number(
           value.toFixed(1)
@@ -1833,7 +1891,7 @@ function render() {
 
   if (!sortedSongs.length) {
     cards.innerHTML =
-      '<p class="muted">No songs found.</p>';
+      '<p class="muted">' + ui("No songs found.", "曲が見つかりませんでした。") + '</p>';
 
     ratingSections.innerHTML =
       "";
@@ -1855,7 +1913,7 @@ function render() {
 
           const scoreText =
             song.score === null
-              ? "Pending"
+              ? ui("Pending", "集計中")
               : song.score;
 
           const scoreSuffix =
@@ -1882,7 +1940,7 @@ function render() {
                 <h3>
                   ${
                     escapeHtml(
-                      song.title
+                      songTitle(song)
                     )
                   }
                 </h3>
@@ -1905,7 +1963,7 @@ function render() {
                 <div class="metrics">
 
                   <p>
-                    Japan recommendation:
+                    ${ui("Japan recommendation:", "日本での推薦率：")}
                     <strong>
                       ${
                         metric(
@@ -1917,7 +1975,7 @@ function render() {
                   </p>
 
                   <p>
-                    Overseas awareness:
+                    ${ui("Overseas awareness:", "海外での認知度：")}
                     <strong>
                       ${
                         metric(
@@ -1929,7 +1987,7 @@ function render() {
                   </p>
 
                   <p>
-                    Overseas post-listening rating:
+                    ${ui("Overseas post-listening rating:", "海外での視聴後評価：")}
                     <strong>
                       ${
                         metric(
@@ -1949,7 +2007,7 @@ function render() {
                   </strong>
 
                   <span>
-                    Hidden Gem Score
+                    ${ui("Hidden Gem Score", "隠れた名曲スコア")}
                     ${scoreSuffix}
                   </span>
 
@@ -1958,7 +2016,7 @@ function render() {
                     song.provisional
                       ? `
                         <span class="badge">
-                          Provisional
+                          ${ui("Provisional", "暫定")}
                         </span>
                       `
                       : ""
@@ -1970,17 +2028,17 @@ function render() {
                   ${
                     song.recommendationTotal
                   }
-                  Japan votes
+                  ${ui("Japan votes", "日本票")}
                   ·
                   ${
                     song.overseasTotal
                   }
-                  overseas responses
+                  ${ui("overseas responses", "海外回答")}
                   ·
                   ${
                     song.postListenRatingCount
                   }
-                  post-listening ratings
+                  ${ui("post-listening ratings", "視聴後評価")}
                 </p>
 
                 <div class="actions">
@@ -1989,7 +2047,7 @@ function render() {
                     class="action primary overseas-action"
                     onclick="window.openRating(${song.id})"
                   >
-                    Listen & Rate
+                    ${ui("Listen & Rate", "聴いて評価")}
                   </button>
 
                   <button
@@ -2002,8 +2060,8 @@ function render() {
                   >
                     ${
                       recommended === true
-                        ? "Recommended ✓"
-                        : "Recommend"
+                        ? ui("Recommended ✓", "推薦済み ✓")
+                        : ui("Recommend", "推薦する")
                     }
                   </button>
 
@@ -2017,8 +2075,8 @@ function render() {
                   >
                     ${
                       recommended === false
-                        ? "Not for me ✓"
-                        : "Not for me"
+                        ? ui("Not for me ✓", "自分向けではない ✓")
+                        : ui("Not for me", "自分向けではない")
                     }
                   </button>
 
@@ -2075,16 +2133,16 @@ function renderRatingSections(
             <div class="rating-inner">
 
               <p class="eyebrow dark">
-                RATE
+                ${ui("RATE", "評価")}
                 ${
                   escapeHtml(
-                    song.title
+                    songTitle(song)
                   )
                 }
               </p>
 
               <h2>
-                Have you heard this song before?
+                ${ui("Have you heard this song before?", "この曲を以前から知っていましたか？")}
               </h2>
 
               ${
@@ -2097,7 +2155,7 @@ function renderRatingSections(
                         loading="lazy"
                         title="${
                           escapeHtml(
-                            song.title
+                            songTitle(song)
                           )
                         }"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -2109,7 +2167,7 @@ function renderRatingSections(
                   `
                   : `
                     <div class="no-preview">
-                      A listening preview has not been added for this song yet.
+                      ${ui("A listening preview has not been added for this song yet.", "この曲にはまだ試聴動画が登録されていません。")}
                     </div>
                   `
               }
@@ -2126,15 +2184,15 @@ function renderRatingSections(
                 >
                   ${
                     my?.heard_before === true
-                      ? "Yes, I knew it ✓"
-                      : "Yes, I knew it"
+                      ? ui("Yes, I knew it ✓", "知っていた ✓")
+                      : ui("Yes, I knew it", "知っていた")
                   }
                 </button>
 
               </div>
 
               <h3>
-                If not, how would you rate it after listening?
+                ${ui("If not, how would you rate it after listening?", "知らなかった場合、聴いた後の評価を教えてください。")}
               </h3>
 
               <div class="rating-actions">
@@ -2174,7 +2232,7 @@ function renderRatingSections(
                 my
                   ? `
                     <p class="sample-note">
-                      Choosing again updates your previous response.
+                      ${ui("Choosing again updates your previous response.", "選び直すと以前の回答が更新されます。")}
                     </p>
                   `
                   : ""
@@ -2668,7 +2726,11 @@ function setAudience(
   document.body.dataset.audience =
     type;
 
-  applyInterfaceLanguage(type);
+  if (!localStorage.getItem(LANGUAGE_KEY)) {
+    applyInterfaceLanguage(type === "japan" ? "ja" : "en");
+  } else {
+    applyInterfaceLanguage(interfaceLanguage);
+  }
 
   $("#japanListener")
     ?.classList.toggle(
@@ -2742,6 +2804,12 @@ function wireUi() {
     ?.addEventListener(
       "click",
       () => openProfileDialog()
+    );
+
+  $("#languageSelect")
+    ?.addEventListener(
+      "change",
+      (event) => setInterfaceLanguage(event.target.value)
     );
 
   const dialog =
@@ -2901,6 +2969,7 @@ window.openSimilarSongs =
 
 async function start() {
   wireUi();
+  setInterfaceLanguage(interfaceLanguage || (navigator.language?.toLowerCase().startsWith("ja") ? "ja" : "en"), false);
 
   try {
     showStatus(
