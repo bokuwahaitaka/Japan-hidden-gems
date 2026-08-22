@@ -70,7 +70,7 @@ async function loadSongs() {
   $("#adminStatus").textContent = "読み込み中…";
   try {
     const [songs, tags, reports] = await Promise.all([
-      rpc("admin_list_songs_v3"),
+      rpc("admin_list_songs_v2"),
       rpc("admin_list_song_tags"),
       rpc("admin_list_tag_reports")
     ]);
@@ -209,7 +209,6 @@ async function backfillAiTags() {
     .filter((item) =>
       item.videoId &&
       (
-        item.song.ai_tag_status !== "completed" ||
         !(item.song.tag_ids || []).length
       )
     );
