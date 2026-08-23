@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://bokuwahaitaka.github.io/Japan-hidden-gems/sitemap.xml
