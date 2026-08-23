@@ -313,6 +313,27 @@ async function enrichSongMedia() {
   }
 }
 
+async function enrichApplePreviews() {
+  const button = $("#enrichApplePreviews");
+  if (!window.confirm("未確認の曲から10曲をApple公式カタログで照合し、公式プレビューを保存します。続行しますか？")) return;
+  button.disabled = true;
+  $("#adminStatus").textContent = "Apple公式プレビューを照合中…（約30秒かかります）";
+  try {
+    const response = await fetch(SUPABASE_URL + "/functions/v1/enrich-apple-previews", {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ limit: 10 })
+    });
+    const result = await parseResponse(response);
+    await loadSongs();
+    $("#adminStatus").textContent = "Appleプレビュー補完：処理 " + Number(result.processed || 0) + "曲、登録 " + Number(result.updated || 0) + "曲、要確認 " + Number(result.review || 0) + "曲、対象なし " + Number(result.unavailable || 0) + "曲、失敗 " + Number(result.failed || 0) + "曲";
+  } catch (error) {
+    $("#adminStatus").textContent = "Appleプレビュー補完に失敗しました：" + error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function toggleSong(button) {
   const songId = Number(button.dataset.id);
   const currentlyHidden = button.dataset.hidden === "true";
@@ -415,6 +436,7 @@ $("#visibilityFilter").addEventListener("change", renderSongs);
 $("#refreshSongs").addEventListener("click", loadSongs);
 $("#backfillTags").addEventListener("click", backfillAiTags);
 $("#enrichSongMedia").addEventListener("click", enrichSongMedia);
+$("#enrichApplePreviews").addEventListener("click", enrichApplePreviews);
 $("#clearSeedMetrics").addEventListener("click", async () => {
   if (!window.confirm("初期参考スコアをすべて削除します。曲自体と本物の回答は残ります。続行しますか？")) return;
   const button = $("#clearSeedMetrics");
