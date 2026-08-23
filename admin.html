@@ -45,6 +45,23 @@
         <h2>利用者からのタグ報告</h2>
         <div id="tagReports" class="song-list"></div>
       </section>
+      <section class="panel">
+        <h2>コミュニティ編集・曲ガイド</h2>
+        <p>利用者の修正提案を確認し、歌詞を転載せずに曲の背景や聴きどころを公開できます。</p>
+        <div id="communityAdminSuggestions" class="song-list"></div>
+        <form id="songGuideForm">
+          <label>曲<select id="guideSongId" required></select></label>
+          <label>言語<select id="guideLocale"><option>ja</option><option>en</option><option>ko</option><option>zh</option><option>ru</option><option>es</option><option>fr</option></select></label>
+          <label>概要<textarea id="guideSummary" maxlength="1000"></textarea></label>
+          <label>テーマ<textarea id="guideTheme" maxlength="1200"></textarea></label>
+          <label>文化・時代背景<textarea id="guideContext" maxlength="1600"></textarea></label>
+          <label>タイトルの意味<textarea id="guideMeaning" maxlength="800"></textarea></label>
+          <label>聴きどころ<textarea id="guideListening" maxlength="1200"></textarea></label>
+          <label>MVの見どころ<textarea id="guideMv" maxlength="1000"></textarea></label>
+          <button type="submit">ガイドを公開</button>
+        </form>
+        <h3>キュレーター認定</h3><div id="communityAdminProfiles" class="song-list"></div>
+      </section>
       <h2>登録曲</h2>
       <div id="adminSongs" class="song-list"></div>
     </section>
@@ -67,6 +84,6 @@
   </dialog>
 
   <script src="admin.js?v=8"></script>
-  <script src="admin-feedback.js?v=1"></script>\n  <script src="admin-growth.js?v=1"></script>
+  <script src="admin-feedback.js?v=1"></script>\n  <script src="admin-growth.js?v=1"></script>\n  <script src="admin-community.js?v=1"></script>
 </body>
 </html>
