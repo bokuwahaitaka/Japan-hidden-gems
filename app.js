@@ -22,6 +22,7 @@ let selectedSongTag = null;
 let personalizedRecommendations = [];
 let favoriteSongIds = new Set();
 let notInterestedSongIds = new Set();
+let songLocalizationMap = new Map();
 const SUPPORTED_INTERFACE_LANGUAGES = ["ja", "en", "ko", "zh", "ru", "es", "fr"];
 let interfaceLanguage = SUPPORTED_INTERFACE_LANGUAGES.includes(localStorage.getItem("jhg_interface_language_v1")) ? localStorage.getItem("jhg_interface_language_v1") : null;
 let currentView = "home";
@@ -94,25 +95,38 @@ function asciiTitle(value) {
 }
 
 function songTitle(song) {
-  if (interfaceLanguage === "en") {
-    const romanized = asciiTitle(song?.title_en);
-    return romanized || `Japanese Song #${song?.id ?? ""}`;
-  }
-  return song?.title ?? "";
+  if (interfaceLanguage === "ja") return song?.title ?? "";
+  const localized = songLocalizationMap.get(`${song?.id}:${interfaceLanguage}`)?.localized_title;
+  if (localized) return String(localized).trim();
+  const romanized = asciiTitle(song?.title_en);
+  return romanized || `Japanese Song #${song?.id ?? ""}`;
 }
 
 function songArtist(song) {
-  if (interfaceLanguage === "en") {
-    const romanized = asciiTitle(song?.artist_en);
-    return romanized || "Japanese Artist";
-  }
-  return song?.artist ?? "";
+  if (interfaceLanguage === "ja") return song?.artist ?? "";
+  const localized = songLocalizationMap.get(`${song?.id}:${interfaceLanguage}`)?.localized_artist;
+  if (localized) return String(localized).trim();
+  const romanized = asciiTitle(song?.artist_en);
+  return romanized || "Japanese Artist";
 }
 
 function setInterfaceLanguage(language, persist = true) {
   interfaceLanguage = SUPPORTED_INTERFACE_LANGUAGES.includes(language) ? language : "en";
   if (persist) localStorage.setItem(LANGUAGE_KEY, interfaceLanguage);
   applyInterfaceLanguage(interfaceLanguage);
+  if (interfaceLanguage !== "ja" && currentUser?.id) {
+    rest(
+      `song_localizations?select=song_id,locale,localized_title,localized_artist&locale=eq.${encodeURIComponent(interfaceLanguage)}`,
+      { authenticated: true }
+    ).then((rows) => {
+      (rows ?? []).forEach((row) => songLocalizationMap.set(`${Number(row.song_id)}:${row.locale}`, row));
+      if (songs.length) {
+        render();
+        renderPersonalized();
+        renderFavorites();
+      }
+    }).catch(() => {});
+  }
 }
 
 function setText(selector, value) {
@@ -1322,7 +1336,8 @@ async function loadAll() {
     tagRows,
     personalizedRows,
     favoriteRows,
-    feedbackRows
+    feedbackRows,
+    localizationRows
   ] = await Promise.all([
       rest(
         "rpc/get_hidden_gem_data_segment_v2",
@@ -1375,8 +1390,16 @@ async function loadAll() {
           encodeURIComponent(currentUser.id) +
           "&feedback=eq.not_interested",
         { authenticated: true }
+      ),
+      rest(
+        `song_localizations?select=song_id,locale,localized_title,localized_artist&locale=eq.${encodeURIComponent(interfaceLanguage === "ja" ? "en" : interfaceLanguage)}`,
+        { authenticated: true }
       )
     ]);
+
+  songLocalizationMap = new Map(
+    (localizationRows ?? []).map((row) => [`${Number(row.song_id)}:${row.locale}`, row])
+  );
 
   favoriteSongIds = new Set(
     (favoriteRows ?? []).map((row) => Number(row.song_id))
