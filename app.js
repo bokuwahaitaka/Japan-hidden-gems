@@ -3153,8 +3153,11 @@ async function start() {
     );
 
     consumeAuthCallback();
-    initializeRouter();
     await ensureAnonymousUser();
+    // Extension modules register their routes during DOMContentLoaded. Initialize
+    // only after the auth await has yielded to those listeners so direct links
+    // such as ?view=daily, ?view=retention and ?view=global remain addressable.
+    initializeRouter();
     syncAccountUi();
 
     await loadListenerProfile();
@@ -3184,4 +3187,4 @@ async function start() {
   }
 }
 
-start();
+document.addEventListener("DOMContentLoaded", start, { once: true });
