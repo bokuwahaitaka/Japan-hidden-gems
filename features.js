@@ -430,7 +430,7 @@ function renderArtists(selectedArtist = null) {
         ${artistDirectoryImage(artistSongs, "profile")}
         <div class="artist-profile-copy">
           <p class="eyebrow dark">ARTIST PROFILE</p>
-          <h3>${escapeHtml(interfaceLanguage === "en" ? songArtist(artistSongs[0]) : artist)}</h3>
+          <h3>${escapeHtml(songArtist(artistSongs[0]))}</h3>
           <p class="meta">${artistSongs.length} ${featureText("registered songs", "曲を登録")}</p>
         </div>
       </div>
@@ -447,7 +447,7 @@ function renderArtists(selectedArtist = null) {
           <button class="artist-index-card" type="button" onclick="window.openArtistPage('${encodeURIComponent(name)}')">
             ${artistDirectoryImage(artistSongs)}
             <span class="artist-index-copy">
-              <strong>${escapeHtml(interfaceLanguage === "en" ? songArtist(artistSongs[0]) : name)}</strong>
+              <strong>${escapeHtml(songArtist(artistSongs[0]))}</strong>
               <span>${artistSongs.length} ${featureText("songs", "曲")}</span>
             </span>
           </button>
