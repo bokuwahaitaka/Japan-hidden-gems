@@ -7,13 +7,13 @@
   const SEEN_KEY = "jhg:v2:swipe-seen";
   const state = {
     catalog: [], queue: [], likes: new Set(), knew: new Set(), activeId: null,
-    players: new Map(), playback: new Map(), commentsSongId: null, replyTo: null,
+    players: new Map(), appleAudio: new Map(), playback: new Map(), commentsSongId: null, replyTo: null,
     profile: null, profileTab: "discovered"
   };
 
   const copy = {
-    en: { discover:"Discover", like:"Like", comments:"Comments", save:"Save", knew:"Knew it", preview:"Play preview", stop:"Stop preview", noSongs:"No preview-ready songs yet.", commentTitle:"Comments", reply:"Reply", post:"Post", placeholder:"Add a comment…", discovered:"Gems Discovered", liked:"Liked songs", saved:"Saved songs", profileComments:"Comments", genres:"Favorite genres", eras:"Favorite eras" },
-    ja: { discover:"見つける", like:"好き", comments:"コメント", save:"保存", knew:"知ってた", preview:"プレビュー再生", stop:"停止", noSongs:"プレビュー対応曲がまだありません。", commentTitle:"コメント", reply:"返信", post:"投稿", placeholder:"コメントを追加…", discovered:"発見したGems", liked:"Likeした曲", saved:"保存した曲", profileComments:"コメント", genres:"好きなジャンル", eras:"好きな年代" },
+    en: { discover:"Discover", like:"Like", comments:"Comments", save:"Save", knew:"Knew it", preview:"Play preview", stop:"Stop preview", noSongs:"No preview-ready songs yet.", appleCredit:"Preview provided courtesy of Apple Music", appleListen:"Listen on Apple Music", commentTitle:"Comments", reply:"Reply", post:"Post", placeholder:"Add a comment…", discovered:"Gems Discovered", liked:"Liked songs", saved:"Saved songs", profileComments:"Comments", genres:"Favorite genres", eras:"Favorite eras" },
+    ja: { discover:"見つける", like:"好き", comments:"コメント", save:"保存", knew:"知ってた", preview:"プレビュー再生", stop:"停止", noSongs:"プレビュー対応曲がまだありません。", appleCredit:"Apple Music提供のプレビュー", appleListen:"Apple Musicで聴く", commentTitle:"コメント", reply:"返信", post:"投稿", placeholder:"コメントを追加…", discovered:"発見したGems", liked:"Likeした曲", saved:"保存した曲", profileComments:"コメント", genres:"好きなジャンル", eras:"好きな年代" },
     ko: { discover:"발견", like:"좋아요", comments:"댓글", save:"저장", knew:"알고 있었어요", preview:"미리듣기", stop:"정지", noSongs:"미리듣기 가능한 곡이 없습니다.", commentTitle:"댓글", reply:"답글", post:"게시", placeholder:"댓글 추가…", discovered:"발견한 Gems", liked:"좋아요한 곡", saved:"저장한 곡", profileComments:"댓글", genres:"좋아하는 장르", eras:"좋아하는 시대" },
     zh: { discover:"发现", like:"喜欢", comments:"评论", save:"保存", knew:"听过", preview:"播放预览", stop:"停止", noSongs:"暂无可预览歌曲。", commentTitle:"评论", reply:"回复", post:"发布", placeholder:"添加评论…", discovered:"已发现 Gems", liked:"喜欢的歌曲", saved:"已保存歌曲", profileComments:"评论", genres:"喜欢的流派", eras:"喜欢的年代" },
     ru: { discover:"Лента", like:"Нравится", comments:"Комментарии", save:"Сохранить", knew:"Уже знал", preview:"Превью", stop:"Стоп", noSongs:"Пока нет песен с превью.", commentTitle:"Комментарии", reply:"Ответить", post:"Отправить", placeholder:"Добавить комментарий…", discovered:"Открыто Gems", liked:"Понравившиеся", saved:"Сохранённые", profileComments:"Комментарии", genres:"Любимые жанры", eras:"Любимые эпохи" },
@@ -31,15 +31,17 @@
     if (song?.youtube_video_id) return String(song.youtube_video_id);
     try { const u=new URL(song?.youtube_url); return u.hostname.includes("youtu.be") ? u.pathname.split("/").filter(Boolean)[0] : u.searchParams.get("v") || u.pathname.match(/\/(?:shorts|embed)\/([^/?]+)/)?.[1] || null; } catch { return null; }
   };
-  const artwork = (song) => song.youtube_thumbnail_url || (videoId(song) ? `https://i.ytimg.com/vi/${encodeURIComponent(videoId(song))}/hqdefault.jpg` : "");
+  const usesApple = (song) => song?.apple_preview_status === "matched" && Boolean(song?.apple_preview_url && song?.apple_music_url);
+  const hasPreview = (song) => song?.preview_enabled !== false && (usesApple(song) || Boolean(videoId(song)));
+  const artwork = (song) => song.apple_artwork_url || song.youtube_thumbnail_url || (videoId(song) ? `https://i.ytimg.com/vi/${encodeURIComponent(videoId(song))}/hqdefault.jpg` : "");
   const avatarStyle = (seed="jhg") => { let h=0; for(const c of seed) h=(h*31+c.charCodeAt(0))%360; return `background:linear-gradient(135deg,hsl(${h} 70% 45%),hsl(${(h+70)%360} 70% 36%))`; };
 
   // Recommendation sources can later replace this object without changing the feed UI.
   const randomSource = {
     async nextBatch({ limit = 30 } = {}) {
       const used = seen();
-      let candidates = state.catalog.filter(s => videoId(s) && s.preview_enabled !== false && !used.has(Number(s.id)));
-      if (!candidates.length) { used.clear(); candidates = state.catalog.filter(s => videoId(s) && s.preview_enabled !== false); }
+      let candidates = state.catalog.filter(s => hasPreview(s) && !used.has(Number(s.id)));
+      if (!candidates.length) { used.clear(); candidates = state.catalog.filter(hasPreview); }
       const batch = shuffle(candidates).slice(0, limit);
       batch.forEach(s => used.add(Number(s.id))); persistSeen(used);
       return batch;
@@ -47,7 +49,7 @@
   };
 
   async function loadCatalog() {
-    const rows = await rest("songs?select=id,title,artist,title_en,artist_en,year,youtube_url,youtube_video_id,youtube_thumbnail_url,artist_image_url,preview_provider,preview_start_seconds,preview_duration_seconds,preview_enabled,is_hidden&is_hidden=eq.false&order=id", { authenticated:true });
+    const rows = await rest("songs?select=id,title,artist,title_en,artist_en,year,youtube_url,youtube_video_id,youtube_thumbnail_url,artist_image_url,preview_provider,preview_start_seconds,preview_duration_seconds,preview_enabled,apple_track_id,apple_music_url,apple_preview_url,apple_artwork_url,apple_preview_status,is_hidden&is_hidden=eq.false&order=id", { authenticated:true });
     const aggregate = new Map((songs || []).map(s => [Number(s.id), s]));
     state.catalog = (rows || []).map(row => ({ ...aggregate.get(Number(row.id)), ...row }));
     state.queue = await randomSource.nextBatch({ limit: Math.min(50, state.catalog.length) });
@@ -70,10 +72,11 @@
 
   function card(song) {
     const id=Number(song.id), img=artwork(song), title=songTitle(song), artist=songArtist(song);
+    const appleCredit=usesApple(song)?`<span class="v2-apple-credit">${esc(t("appleCredit"))} · <a href="${esc(song.apple_music_url)}" target="_blank" rel="noopener noreferrer">${esc(t("appleListen"))} ↗</a></span>`:"";
     return `<article class="v2-swipe-card" data-v2-card data-song-id="${id}">
       ${img?`<img class="v2-swipe-bg" src="${esc(img)}" alt=""><img class="v2-swipe-cover" src="${esc(img)}" alt="${esc(title)}">`:`<div class="v2-swipe-cover artwork-fallback">JHG</div>`}
       <div class="v2-swipe-shade"></div><div class="v2-player-host" id="v2-player-${id}"></div>
-      <div class="v2-swipe-copy"><h1>${esc(title)}</h1><p>${esc(artist)}${song.year?` · ${esc(song.year)}`:""}</p><small>${esc((song.tags||[]).slice(0,3).map(x=>x.label_en||x.label_ja).filter(Boolean).join(" · "))}</small><br><button class="v2-preview" type="button" data-v2-preview="${id}">▶ ${esc(t("preview"))}</button></div>
+      <div class="v2-swipe-copy"><h1>${esc(title)}</h1><p>${esc(artist)}${song.year?` · ${esc(song.year)}`:""}</p><small>${esc((song.tags||[]).slice(0,3).map(x=>x.label_en||x.label_ja).filter(Boolean).join(" · "))}</small><br><button class="v2-preview" type="button" data-v2-preview="${id}">▶ ${esc(t("preview"))}</button>${appleCredit}</div>
       <aside class="v2-swipe-actions">${actionButton("like",id,state.likes.has(id))}${actionButton("comments",id,false)}${actionButton("save",id,favoriteSongIds?.has(id))}${actionButton("knew",id,state.knew.has(id))}</aside>
     </article>`;
   }
@@ -111,7 +114,24 @@
   }
 
   async function togglePreview(id) {
-    const song=byId(id); if(!song||!videoId(song))return;
+    const song=byId(id); if(!song||!hasPreview(song))return;
+    if(usesApple(song)){
+      activateSong(id);
+      let audio=state.appleAudio.get(id);
+      if(!audio){
+        audio=new Audio(song.apple_preview_url);audio.preload="none";state.appleAudio.set(id,audio);
+        audio.addEventListener("play",()=>handlePlaybackState(id,true));
+        audio.addEventListener("pause",()=>handlePlaybackState(id,false));
+        audio.addEventListener("ended",()=>handlePlaybackState(id,false));
+        audio.addEventListener("error",()=>{
+          handlePlaybackState(id,false);state.appleAudio.delete(id);song.apple_preview_status="failed";
+          if(videoId(song))togglePreview(id).catch(()=>{});else showStatus("Apple preview is temporarily unavailable.","error");
+        });
+      }
+      audio.paused?await audio.play():audio.pause();
+      return;
+    }
+    if(!videoId(song))return;
     activateSong(id); const existing=state.players.get(id);
     if(existing){ const playing=existing.getPlayerState?.()===1; playing?existing.pauseVideo():existing.playVideo(); return; }
     const YT=await youtubeReady();
@@ -122,23 +142,31 @@
   }
 
   function handlePlayerState(id, playerState) {
+    handlePlaybackState(id,playerState===1);
+  }
+
+  function handlePlaybackState(id, playing) {
     const info=state.playback.get(id)||{seconds:0,token:crypto.randomUUID(),qualified:false,timer:null,lastTick:0};
     state.playback.set(id,info);
     const button=document.querySelector(`[data-v2-preview="${id}"]`);
-    if(playerState===1){info.lastTick=performance.now();if(button)button.textContent=`■ ${t("stop")}`;clearInterval(info.timer);info.timer=setInterval(()=>playbackTick(id),500);}
+    if(playing){info.lastTick=performance.now();if(button)button.textContent=`■ ${t("stop")}`;clearInterval(info.timer);info.timer=setInterval(()=>playbackTick(id),500);}
     else {clearInterval(info.timer);info.timer=null;if(button)button.textContent=`▶ ${t("preview")}`;persistPreview(id).catch(()=>{});}
   }
 
   function playbackTick(id) {
-    const info=state.playback.get(id), song=byId(id), player=state.players.get(id); if(!info||!song||!player)return;
+    const info=state.playback.get(id), song=byId(id); if(!info||!song)return;
     const now=performance.now(); info.seconds+=Math.min(1,(now-info.lastTick)/1000); info.lastTick=now;
-    const start=Number(song.preview_start_seconds)||0,duration=Math.max(15,Math.min(30,Number(song.preview_duration_seconds)||20));
     if(!info.qualified&&info.seconds>=DISCOVERY_SECONDS){info.qualified=true;persistDiscovery(id).catch(err=>showStatus(err.message,"error"));}
-    if((player.getCurrentTime?.()||start)-start>=duration)player.pauseVideo();
+    if(!usesApple(song)){
+      const player=state.players.get(id);if(!player)return;
+      const start=Number(song.preview_start_seconds)||0,duration=Math.max(15,Math.min(30,Number(song.preview_duration_seconds)||20));
+      if((player.getCurrentTime?.()||start)-start>=duration)player.pauseVideo();
+    }
   }
 
   function stopAllPlayers(exceptId=null) {
     state.players.forEach((player,id)=>{if(id!==exceptId){try{player.pauseVideo?.();}catch{} persistPreview(id).catch(()=>{});}});
+    state.appleAudio.forEach((audio,id)=>{if(id!==exceptId){try{audio.pause();audio.currentTime=0;}catch{} persistPreview(id).catch(()=>{});}});
   }
 
   async function persistPreview(id) {
