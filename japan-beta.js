@@ -71,20 +71,31 @@
       const response = await fetch(`${SUPABASE_URL}/functions/v1/resolve-youtube-link`, {method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${accessToken}`,"Content-Type":"application/json"},body:JSON.stringify({url:`https://www.youtube.com/watch?v=${videoId}`})});
       const metadata = await response.json();
       if (!response.ok) throw new Error(metadata.error || "動画情報を取得できませんでした。");
-      await rest("rpc/request_song", {method:"POST",authenticated:true,body:JSON.stringify({p_title:metadata.title,p_artist:metadata.authorName,p_youtube_url:`https://www.youtube.com/watch?v=${videoId}`,p_video_id:videoId})});
+      const result = await rest("rpc/request_song", {method:"POST",authenticated:true,body:JSON.stringify({p_title:metadata.title,p_artist:metadata.authorName,p_youtube_url:`https://www.youtube.com/watch?v=${videoId}`,p_video_id:videoId})});
       input.value = ""; note.textContent = `「${metadata.title}」を追加しました。`; note.className = "beta-complete";
       await loadAll();
+      const addedId = Number(Array.isArray(result) ? result[0] : result);
+      if (addedId && selected.size < 5) selected.add(addedId);
+      renderPicker();
     } catch (error) { note.className = "form-error"; note.textContent = error.message; }
     finally { button.disabled = false; button.textContent = "リンクから追加"; }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    document.body.classList.add("prelaunch-japan");
+    VALID_VIEWS.add("japan-beta");
+    const url = new URL(window.location.href); url.searchParams.set("view", "japan-beta"); window.history.replaceState({jhgRoute:true,view:"japan-beta"},"",url);
     byId("japanBetaSearch")?.addEventListener("input", renderPicker);
     byId("japanBetaCatalog")?.addEventListener("click", (event) => { const button = event.target.closest("[data-beta-song]"); if (!button) return; const id=Number(button.dataset.betaSong); if (selected.has(id)) selected.delete(id); else if (selected.size < 5) selected.add(id); renderPicker(); });
     byId("japanBetaSelected")?.addEventListener("click", (event) => { const button=event.target.closest("[data-beta-remove]"); if(button){selected.delete(Number(button.dataset.betaRemove));renderPicker();} });
     byId("japanBetaSubmit")?.addEventListener("click", submitPicks);
     byId("songMvRequestForm")?.addEventListener("submit", submitMv);
     document.addEventListener("click", (event) => { if (event.target.closest('[data-route="japan-beta"]')) setTimeout(() => {renderPicker();loadCampaignStatus();},0); });
-    setTimeout(() => { renderPicker(); loadCampaignStatus(); }, 1200);
+    setTimeout(() => {
+      if (listenerProfile?.listener_group !== "japan" || listenerProfile?.country_code !== "JP") openProfileDialog("japan");
+      else setAudience("japan", false);
+      if (typeof renderView === "function") renderView("japan-beta");
+      renderPicker(); loadCampaignStatus();
+    }, 1200);
   });
 })();
