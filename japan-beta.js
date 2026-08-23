@@ -37,8 +37,7 @@
     }).join("") || "<p>一致する曲がありません。見つからない場合は、公式MVリンクから追加してください。</p>";
     const chosen = visibleSongs().filter((song) => selected.has(Number(song.id)));
     byId("japanBetaSelected").innerHTML = chosen.map((song) => `<button type="button" data-beta-remove="${song.id}">${esc(song.title)} ×</button>`).join("");
-    byId("japanBetaSelectedCount").textContent = `${selected.size} / 5曲`;
-    byId("japanBetaSubmit").disabled = selected.size !== 5;
+    byId("japanBetaSelectedCount").textContent = `${selected.size}曲を推薦中`;
   }
 
   async function loadCampaignStatus() {
@@ -49,16 +48,26 @@
     } catch { if (byId("japanBetaCampaignProgress")) byId("japanBetaCampaignProgress").textContent = "先行推薦データを募集中"; }
   }
 
-  async function submitPicks() {
-    const button = byId("japanBetaSubmit");
-    const status = byId("japanBetaStatus");
-    button.disabled = true; status.textContent = "送信中…";
+  async function loadMyPicks() {
     try {
-      await rest("rpc/submit_japan_beta_picks", {method:"POST",authenticated:true,body:JSON.stringify({p_song_ids:[...selected],p_note:byId("japanBetaNote").value.trim()})});
+      const rows = await rest("japan_beta_picks?select=song_id", {authenticated:true});
+      selected.clear();
+      (rows || []).forEach((row) => selected.add(Number(row.song_id)));
+      renderPicker();
+    } catch (error) { byId("japanBetaStatus").textContent = error.message; }
+  }
+
+  async function setPick(songId, shouldSelect) {
+    const status = byId("japanBetaStatus");
+    status.textContent = "保存中…";
+    try {
+      await rest("rpc/set_japan_beta_pick", {method:"POST",authenticated:true,body:JSON.stringify({p_song_id:Number(songId),p_selected:Boolean(shouldSelect)})});
+      if (shouldSelect) selected.add(Number(songId)); else selected.delete(Number(songId));
       status.className = "beta-complete";
-      status.textContent = "推薦を受け付けました。ご協力ありがとうございます！";
-      await loadCampaignStatus();
-    } catch (error) { status.className = "form-error"; status.textContent = error.message; button.disabled = false; }
+      status.textContent = shouldSelect ? "推薦に追加しました。" : "推薦から外しました。";
+      renderPicker();
+      loadCampaignStatus();
+    } catch (error) { status.className = "form-error"; status.textContent = error.message; }
   }
 
   async function submitMv(event) {
@@ -75,8 +84,7 @@
       input.value = ""; note.textContent = `「${metadata.title}」を追加しました。`; note.className = "beta-complete";
       await loadAll();
       const addedId = Number(Array.isArray(result) ? result[0] : result);
-      if (addedId && selected.size < 5) selected.add(addedId);
-      renderPicker();
+      if (addedId) await setPick(addedId, true); else renderPicker();
     } catch (error) { note.className = "form-error"; note.textContent = error.message; }
     finally { button.disabled = false; button.textContent = "リンクから追加"; }
   }
@@ -86,16 +94,15 @@
     VALID_VIEWS.add("japan-beta");
     const url = new URL(window.location.href); url.searchParams.set("view", "japan-beta"); window.history.replaceState({jhgRoute:true,view:"japan-beta"},"",url);
     byId("japanBetaSearch")?.addEventListener("input", renderPicker);
-    byId("japanBetaCatalog")?.addEventListener("click", (event) => { const button = event.target.closest("[data-beta-song]"); if (!button) return; const id=Number(button.dataset.betaSong); if (selected.has(id)) selected.delete(id); else if (selected.size < 5) selected.add(id); renderPicker(); });
-    byId("japanBetaSelected")?.addEventListener("click", (event) => { const button=event.target.closest("[data-beta-remove]"); if(button){selected.delete(Number(button.dataset.betaRemove));renderPicker();} });
-    byId("japanBetaSubmit")?.addEventListener("click", submitPicks);
+    byId("japanBetaCatalog")?.addEventListener("click", async (event) => { const button = event.target.closest("[data-beta-song]"); if (!button || button.disabled) return; button.disabled=true; const id=Number(button.dataset.betaSong); await setPick(id,!selected.has(id)); });
+    byId("japanBetaSelected")?.addEventListener("click", async (event) => { const button=event.target.closest("[data-beta-remove]"); if(button && !button.disabled){button.disabled=true;await setPick(Number(button.dataset.betaRemove),false);} });
     byId("songMvRequestForm")?.addEventListener("submit", submitMv);
     document.addEventListener("click", (event) => { if (event.target.closest('[data-route="japan-beta"]')) setTimeout(() => {renderPicker();loadCampaignStatus();},0); });
-    setTimeout(() => {
+    setTimeout(async () => {
       if (listenerProfile?.listener_group !== "japan" || listenerProfile?.country_code !== "JP") openProfileDialog("japan");
       else setAudience("japan", false);
       if (typeof renderView === "function") renderView("japan-beta");
-      renderPicker(); loadCampaignStatus();
+      await loadMyPicks(); renderPicker(); loadCampaignStatus();
     }, 1200);
   });
 })();
