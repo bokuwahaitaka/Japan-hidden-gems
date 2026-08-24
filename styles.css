@@ -1069,3 +1069,89 @@ h1,h2,h3,.brand,.rank,.stats strong{
   .cup-match{grid-template-columns:1fr}
   .cup-vs{margin:-7px auto;position:relative;z-index:2}
 }
+
+
+/* Immersive MV wall on the first screen */
+.home-mv-wall{
+  position:absolute;
+  inset:-12vh -3vw;
+  z-index:0;
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:clamp(8px,1.2vw,18px);
+  opacity:0;
+  transform:scale(1.035);
+  transition:opacity .9s ease;
+  pointer-events:none;
+}
+.home-mv-wall.is-ready{opacity:.72}
+.home-mv-lane{min-width:0;overflow:hidden}
+.home-mv-track{
+  display:flex;
+  flex-direction:column;
+  animation:home-mv-drift var(--mv-duration,56s) linear infinite;
+  will-change:transform;
+}
+.home-mv-set{
+  display:flex;
+  flex:none;
+  flex-direction:column;
+  gap:clamp(8px,1.2vw,18px);
+  padding-bottom:clamp(8px,1.2vw,18px);
+}
+.home-mv-frame{
+  position:relative;
+  overflow:hidden;
+  aspect-ratio:16/9;
+  border:1px solid rgba(255,255,255,.2);
+  background:#181818;
+  box-shadow:0 18px 44px rgba(0,0,0,.24);
+}
+.home-mv-frame::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(180deg,transparent 58%,rgba(0,0,0,.3));
+}
+.home-mv-frame img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  filter:saturate(.88) contrast(1.06);
+}
+.home-mv-scrim{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(7,7,6,.97) 0%,rgba(7,7,6,.88) 35%,rgba(7,7,6,.48) 69%,rgba(7,7,6,.72) 100%),
+    linear-gradient(180deg,rgba(7,7,6,.28),rgba(7,7,6,.72));
+}
+.hero .hero-grid{z-index:3}
+.hero::before{z-index:4}
+.hero::after{z-index:2}
+
+@keyframes home-mv-drift{
+  from{transform:translate3d(0,0,0)}
+  to{transform:translate3d(0,-50%,0)}
+}
+
+@media (max-width:900px){
+  .home-mv-wall{
+    right:-28vw;
+    left:28vw;
+    grid-template-columns:repeat(3,minmax(150px,1fr));
+  }
+  .home-mv-lane:nth-child(n+4){display:none}
+  .home-mv-wall.is-ready{opacity:.58}
+  .home-mv-scrim{
+    background:linear-gradient(90deg,rgba(7,7,6,.98) 0%,rgba(7,7,6,.84) 62%,rgba(7,7,6,.58));
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .home-mv-wall{inset:0;transform:none;transition:none}
+  .home-mv-track{animation:none;transform:translateY(-8%)}
+}
