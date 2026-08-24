@@ -134,7 +134,7 @@ function setText(selector, value) {
   if (element) element.textContent = value;
 }
 
-const VALID_VIEWS = new Set(["home", "ranking", "genres", "personalized", "favorites", "request", "listen", "detail", "discover", "artists", "playlists", "history", "weekly-mix"]);
+const VALID_VIEWS = new Set(["home", "ranking", "genres", "personalized", "favorites", "listen", "detail", "discover", "artists", "playlists", "history", "weekly-mix"]);
 
 function routeFromLocation() {
   const requested = new URLSearchParams(window.location.search).get("view");
@@ -213,7 +213,6 @@ function applyInterfaceLanguage(language = interfaceLanguage || (audience === "j
     "#accountBtn": ["Account", "アカウント"],
     "#languageLabel": ["Language", "言語"],
     "#sortScoreOption": ["Highest Hidden Gem Score", "隠れた名曲スコア順"],
-    "#sortJapanOption": ["Highest Japan Recommendation", "日本での推薦率順"],
     "#sortAwarenessOption": ["Lowest Overseas Awareness", "海外認知度が低い順"],
     "#sortRatingOption": ["Highest Overseas Rating", "海外評価順"],
     "#methodEyebrow": ["METHOD", "評価方法"],
@@ -270,7 +269,7 @@ function applyInterfaceLanguage(language = interfaceLanguage || (audience === "j
     "#countryFilterLabel": ["Region", "地域別"],
     "#ageFilterLabel": ["Age band", "年齢別"],
     "#songTagFilterLabel": ["Song tag", "曲のタグ"],
-    "#rankingCopy": ["GEMS = Japan recommendation × overseas rating × discovery gap. Reference scores are clearly marked.", "GEMS ＝ 日本での推薦率 × 海外評価 × 認知ギャップ。初期参考スコアは明示しています。"],
+    "#rankingCopy": ["GEMS combines listener rating with discovery gap: highly rated songs that fewer listeners knew rank higher.", "GEMSはリスナー評価と認知ギャップを組み合わせます。高評価で、事前に知っていた人が少ない曲ほど上位になります。"],
     "#requestEyebrow": ["ADD A HIDDEN GEM", "曲を追加"],
     "#requestTitle": ["Add a song from its YouTube link.", "YouTubeリンクから曲を追加しよう。"],
     "#requestCopy": ["Paste the official YouTube MV link for the song you want to add. The title and artist will be filled in automatically.", "追加したい曲のYouTube公式MVリンクを貼り付けてください。曲名とアーティスト名は自動で取得されます。"],
@@ -667,6 +666,7 @@ async function reloadForCurrentUser() {
   favoriteSongIds = new Set();
   notInterestedSongIds = new Set();
   await loadListenerProfile();
+    setAudience("overseas", false);
   await loadDemographicOptions();
   await loadAll();
 }
@@ -1504,24 +1504,20 @@ async function loadAll() {
           : null;
 
       const score =
-        japan !== null &&
         awareness !== null &&
         overseas !== null
           ? Number(
               (
-                japan *
                 (overseas / 5) *
                 (
                   1 -
                   awareness / 100
-                )
+                ) * 100
               ).toFixed(1)
             )
           : null;
 
       const provisional =
-        recommendationTotal <
-          MIN_JAPAN_VOTES ||
         overseasTotal <
           MIN_OVERSEAS_RESPONSES ||
         postListenRatingCount <
@@ -1635,36 +1631,22 @@ async function loadAll() {
 ========================= */
 
 function renderStats() {
-  const japanVotes =
-    songs.reduce(
-      (sum, song) =>
-        sum +
-        song.recommendationTotal,
-      0
-    );
-
-  const overseasResponses =
-    songs.reduce(
-      (sum, song) =>
-        sum +
-        song.overseasTotal,
-      0
-    );
-
+  const ratings = songs.reduce(
+    (sum, song) => sum + song.postListenRatingCount,
+    0
+  );
+  const overseasResponses = songs.reduce(
+    (sum, song) => sum + song.overseasTotal,
+    0
+  );
   const seedActive = songs.some((song) => song.seedBaseline);
   const baselineNotice = $("#baselineNotice");
   baselineNotice?.classList.toggle("hidden", !seedActive);
-  setText("#japanVoteLabel", seedActive ? ui("responses incl. reference", "参考値を含む推薦回答") : ui("Japan votes", "日本からの投票"));
-  setText("#overseasResponseLabel", seedActive ? ui("responses incl. reference", "参考値を含む海外回答") : ui("overseas responses", "海外からの回答"));
-
-  $("#songCount").textContent =
-    songs.length;
-
-  $("#japanVoteCount").textContent =
-    japanVotes;
-
-  $("#overseasResponseCount").textContent =
-    overseasResponses;
+  setText("#japanVoteLabel", ui("ratings", "評価"));
+  setText("#overseasResponseLabel", seedActive ? ui("discovery checks incl. reference", "参考値を含む認知チェック") : ui("discovery checks", "認知チェック"));
+  $("#songCount").textContent = songs.length;
+  $("#japanVoteCount").textContent = ratings;
+  $("#overseasResponseCount").textContent = overseasResponses;
 }
 
 
@@ -2914,14 +2896,14 @@ function setAudience(
   type,
   scroll = true
 ) {
-  audience =
-    type;
+  type = "overseas";
+  audience = type;
 
   document.body.dataset.audience =
     type;
 
   if (!localStorage.getItem(LANGUAGE_KEY)) {
-    applyInterfaceLanguage(type === "japan" ? "ja" : "en");
+    applyInterfaceLanguage("en");
   } else {
     applyInterfaceLanguage(interfaceLanguage);
   }
