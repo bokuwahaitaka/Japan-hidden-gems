@@ -217,7 +217,7 @@ function applyInterfaceLanguage(language = interfaceLanguage || (audience === "j
     "#sortRatingOption": ["Highest Overseas Rating", "海外評価順"],
     "#methodEyebrow": ["METHOD", "評価方法"],
     "#methodTitle": ["What makes a hidden gem?", "隠れた名曲とは？"],
-    "#methodCopy": ["A song ranks highly when Japanese listeners recommend it, overseas listeners rarely knew it beforehand, and people outside Japan rate it highly after listening.", "日本のリスナーから推薦され、海外でまだあまり知られておらず、聴いた後の評価が高い曲ほど上位になります。"],
+    "#methodCopy": ["A song ranks highly when few listeners knew it, first-time listeners rate it highly, and they want to replay or share it.", "事前に知っていた人が少なく、初聴き評価と再聴・共有意向が高い曲ほど上位になります。"],
     "#methodNote": ["Early results are marked provisional until enough responses are collected.", "十分な回答が集まるまでは暫定結果として表示されます。"],
     "#profileEyebrow": ["ANONYMOUS LISTENER PROFILE", "匿名リスナープロフィール"],
     "#profileTitle": ["Tell us about your listening", "あなたの音楽の聴き方を教えてください"],
@@ -1331,6 +1331,7 @@ async function loadAll() {
 
   const [
     rows,
+    discoveryScoreRows,
     titleRows,
     hiddenRows,
     tagRows,
@@ -1351,6 +1352,10 @@ async function loadAll() {
           })
         }
       ),
+      rest(
+        "rpc/get_discovery_scoreboard",
+        { method: "POST", authenticated: true, body: JSON.stringify({}) }
+      ).catch(() => []),
       rest(
         "songs?select=id,title_en,artist_en,youtube_url,youtube_video_id,youtube_thumbnail_url,youtube_channel_id,artist_image_url,media_enrichment_status",
         { authenticated: true }
@@ -1401,6 +1406,10 @@ async function loadAll() {
     (localizationRows ?? []).map((row) => [`${Number(row.song_id)}:${row.locale}`, row])
   );
 
+  const discoveryScores = new Map(
+    (discoveryScoreRows ?? []).map((row) => [Number(row.song_id), row])
+  );
+
   favoriteSongIds = new Set(
     (favoriteRows ?? []).map((row) => Number(row.song_id))
   );
@@ -1448,6 +1457,9 @@ async function loadAll() {
           )
       )
       .map((row) => {
+      const discoveryScore = !selectedCountry && !selectedAgeBand
+        ? discoveryScores.get(Number(row.id))
+        : null;
       const recommendationTotal =
         Number(
           row.recommendation_total ?? 0
@@ -1488,23 +1500,26 @@ async function loadAll() {
             ) * 100
           : null;
 
-      const awareness =
-        overseasTotal > 0
+      const awareness = discoveryScore?.awareness_percent !== null && discoveryScore?.awareness_percent !== undefined
+        ? Number(discoveryScore.awareness_percent)
+        : overseasTotal > 0
           ? (
               knownCount /
               overseasTotal
             ) * 100
           : null;
 
-      const overseas =
-        averageRating !== null
+      const overseas = discoveryScore?.average_rating !== null && discoveryScore?.average_rating !== undefined
+        ? Number(discoveryScore.average_rating)
+        : averageRating !== null
           ? Number(
               averageRating.toFixed(2)
             )
           : null;
 
-      const score =
-        awareness !== null &&
+      const score = discoveryScore?.jhg_score !== null && discoveryScore?.jhg_score !== undefined
+        ? Number(discoveryScore.jhg_score)
+        : awareness !== null &&
         overseas !== null
           ? Number(
               (
@@ -1517,8 +1532,9 @@ async function loadAll() {
             )
           : null;
 
-      const provisional =
-        overseasTotal <
+      const provisional = discoveryScore
+        ? Boolean(discoveryScore.provisional)
+        : overseasTotal <
           MIN_OVERSEAS_RESPONSES ||
         postListenRatingCount <
           MIN_OVERSEAS_RATINGS;
@@ -1588,6 +1604,8 @@ async function loadAll() {
         overseas,
         score,
         provisional,
+        relisten: discoveryScore?.relisten_percent === null || discoveryScore?.relisten_percent === undefined ? null : Number(discoveryScore.relisten_percent),
+        shareIntent: discoveryScore?.share_percent === null || discoveryScore?.share_percent === undefined ? null : Number(discoveryScore.share_percent),
 
         recommendationTotal,
         overseasTotal,
@@ -2173,6 +2191,10 @@ function render() {
                       }
                     </strong>
                   </p>
+
+                  ${song.relisten !== null ? `<p>${ui("Would listen again:", "もう一度聴きたい：")}<strong>${metric(song.relisten,"%")}</strong></p>` : ""}
+
+                  ${song.shareIntent !== null ? `<p>${ui("Would share:", "誰かに共有したい：")}<strong>${metric(song.shareIntent,"%")}</strong></p>` : ""}
 
                 </div>
 
