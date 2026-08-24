@@ -42,6 +42,32 @@
         <button id="logoutBtn" class="secondary" type="button">ログアウト</button>
       </div>
       <p id="adminStatus" class="status" aria-live="polite"></p>
+      <section id="catalogCoverage" class="panel catalog-coverage" aria-labelledby="catalogCoverageTitle">
+        <div class="catalog-heading">
+          <div>
+            <p class="eyebrow">CATALOG HEALTH</p>
+            <h2 id="catalogCoverageTitle">カタログ充実度</h2>
+            <p>ジャンル・年代・動画・プレビューの不足を確認し、次に追加すべき曲を判断します。</p>
+          </div>
+          <button id="refreshCatalogCoverage" class="secondary" type="button">集計を更新</button>
+        </div>
+        <div id="catalogCoverageSummary" class="catalog-summary" aria-live="polite"></div>
+        <div class="catalog-dashboard-grid">
+          <div>
+            <h3>ジャンル別</h3>
+            <div id="catalogGenreCoverage" class="coverage-list"></div>
+          </div>
+          <div>
+            <h3>年代別</h3>
+            <div id="catalogEraCoverage" class="coverage-list"></div>
+          </div>
+        </div>
+        <div class="catalog-matrix-wrap">
+          <h3>年代 × ジャンル</h3>
+          <div id="catalogCoverageMatrix"></div>
+        </div>
+        <div id="catalogNextActions" class="catalog-next-actions"></div>
+      </section>
       <section class="panel">
         <h2>利用者からのタグ報告</h2>
         <div id="tagReports" class="song-list"></div>
@@ -84,10 +110,12 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=8"></script>
+  <script src="admin.js?v=9"></script>
+  <script src="admin-catalog.js?v=1"></script>
   <script src="admin-feedback.js?v=1"></script>
   <script src="admin-growth.js?v=1"></script>
   <script src="admin-community.js?v=1"></script>
-  <script src="admin-global.js?v=1"></script>\n  <script src="admin-beta.js?v=1"></script>
+  <script src="admin-global.js?v=1"></script>
+  <script src="admin-beta.js?v=1"></script>
 </body>
 </html>
