@@ -95,7 +95,8 @@ Deno.serve(async (request) => {
     if (isAdmin !== true) return new Response(JSON.stringify({ error: "Administrator access required." }), { status: 403, headers: responseHeaders });
     const payload = await request.json().catch(() => ({}));
     const limit = Math.max(1, Math.min(10, Number(payload?.limit) || 10));
-    const songs = await json(await fetch(supabaseUrl + "/rest/v1/songs?select=id,title,artist,title_en,artist_en&is_hidden=eq.false&youtube_url=is.null&media_enrichment_status=in.(pending,failed)&order=id.asc&limit=" + limit, { headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey } }));
+    const runAll = payload?.runAll === true;
+    const songs = await json(await fetch(supabaseUrl + "/rest/v1/songs?select=id,title,artist,title_en,artist_en&is_hidden=eq.false&youtube_url=is.null&media_enrichment_status=eq.pending&order=id.asc&limit=" + limit, { headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey } }));
     let updated = 0, review = 0, failed = 0;
     for (const song of songs || []) {
       try {
@@ -117,10 +118,21 @@ Deno.serve(async (request) => {
           await fetch(supabaseUrl + "/rest/v1/songs?id=eq." + song.id, { method: "PATCH", headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey, "Content-Type": "application/json" }, body: JSON.stringify({ media_enrichment_status: "review", media_match_confidence: Number(best.value.toFixed(3)), media_source: "youtube-public-search" }) });
           review += 1;
         }
-      } catch (error) { console.error("youtube-public-search", song.id, error); failed += 1; }
+      } catch (error) {
+        console.error("youtube-public-search", song.id, error); failed += 1;
+        await fetch(supabaseUrl + "/rest/v1/songs?id=eq." + song.id, { method: "PATCH", headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey, "Content-Type": "application/json" }, body: JSON.stringify({ media_enrichment_status: "review", media_source: "youtube-public-search-error" }) });
+      }
       await new Promise((resolve) => setTimeout(resolve, 900));
     }
-    return new Response(JSON.stringify({ processed: (songs || []).length, updated, review, failed, quotaStopped: false, method: "youtube-public-search" }), { headers: responseHeaders });
+    const continuing = runAll && (songs || []).length > 0;
+    if (continuing) {
+      EdgeRuntime.waitUntil(fetch(supabaseUrl + "/functions/v1/enrich-song-media", {
+        method: "POST",
+        headers: { apikey: anonKey, Authorization: authHeader, "Content-Type": "application/json" },
+        body: JSON.stringify({ limit, runAll: true })
+      }).catch((error) => console.error("youtube-public-search-chain", error)));
+    }
+    return new Response(JSON.stringify({ processed: (songs || []).length, updated, review, failed, continuing, quotaStopped: false, method: "youtube-public-search" }), { headers: responseHeaders });
   } catch (error) {
     console.error(error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unexpected error." }), { status: 500, headers: responseHeaders });
