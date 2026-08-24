@@ -1,0 +1,34 @@
+import {readFile,writeFile,mkdir,rm} from "node:fs/promises";
+const BASE="https://bokuwahaitaka.github.io/Japan-hidden-gems";
+const app=await readFile(new URL("../app.js",import.meta.url),"utf8");
+const endpoint=app.match(/SUPABASE_URL\s*=\s*"([^"]+)"/)?.[1];
+const key=app.match(/SUPABASE_KEY\s*=\s*"([^"]+)"/)?.[1];
+if(!endpoint||!key) throw new Error("Supabase public configuration was not found.");
+const qs=new URLSearchParams({select:"id,title,artist,year,title_en,artist_en,youtube_url,is_catalog_seed,data_quality_status",is_hidden:"is.false",order:"artist.asc,title.asc"});
+const response=await fetch(endpoint+"/rest/v1/songs?"+qs,{headers:{apikey:key,Authorization:"Bearer "+key}});
+if(!response.ok) throw new Error("Catalog request failed: "+response.status);
+const raw=await response.json();
+const songs=raw.filter(song=>song.is_catalog_seed===true||song.data_quality_status==="verified");
+const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const slug=s=>String(s).normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,70);
+const seen=new Set();
+const output=new URL("../songs/",import.meta.url);
+await rm(output,{recursive:true,force:true}); await mkdir(output,{recursive:true});
+const items=[];
+for(const song of songs){
+ const title=song.title_en||song.title, artist=song.artist_en||song.artist;
+ let id=slug(artist+"-"+title)||"japanese-song"; id+="-"+song.id;
+ if(seen.has(id)) continue; seen.add(id);
+ const url=BASE+"/songs/"+id+"/"; await mkdir(new URL(id+"/",output),{recursive:true});
+ const description=title+" by "+artist+(song.year?" ("+song.year+")":"")+" — discover this Japanese song on Japan Hidden Gems.";
+ const schema={"@context":"https://schema.org","@type":"MusicRecording",name:title,byArtist:{"@type":"MusicGroup",name:artist},datePublished:song.year?String(song.year):undefined,url};
+ const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escape(title)+' by '+escape(artist)+' | Japanese Song Guide</title><meta name="description" content="'+escape(description)+'"><link rel="canonical" href="'+url+'"><meta name="robots" content="index,follow"><meta property="og:type" content="music.song"><meta property="og:title" content="'+escape(title)+' by '+escape(artist)+'"><meta property="og:description" content="'+escape(description)+'"><meta property="og:url" content="'+url+'"><link rel="stylesheet" href="../../seo.css"><script type="application/ld+json">'+JSON.stringify(schema).replace(/</g,"\\u003c")+'<\/script></head><body><header><a class="brand" href="../../">JAPAN HIDDEN GEMS</a></header><main><p class="eyebrow">JAPANESE SONG GUIDE</p><h1>'+escape(title)+'</h1><p class="lead">By '+escape(artist)+(song.year?" · "+song.year:"")+'</p><p>'+escape(description)+'</p>'+(song.youtube_url?'<a class="button" rel="noopener" href="'+escape(song.youtube_url)+'">Watch the official video</a>':"")+' <a class="text-link" href="../../?view=ranking&lang=en">Explore more J-pop</a></main><footer>Japan Hidden Gems</footer></body></html>';
+ await writeFile(new URL(id+"/index.html",output),html);
+ items.push({title,artist,year:song.year,href:"./"+id+"/",url});
+}
+const directory='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Japanese Song Catalog | Japan Hidden Gems</title><meta name="description" content="Browse Japanese songs by artist and title."><link rel="canonical" href="'+BASE+'/songs/"><meta name="robots" content="index,follow"><link rel="stylesheet" href="../seo.css"></head><body><header><a class="brand" href="../">JAPAN HIDDEN GEMS</a></header><main><p class="eyebrow">JAPANESE SONG DIRECTORY</p><h1>Japanese song catalog</h1><p class="lead">'+items.length+' reviewed Japanese songs for international listeners.</p><div class="cards">'+items.map(x=>'<a class="card" href="'+x.href+'"><strong>'+escape(x.title)+'</strong><span>'+escape(x.artist)+(x.year?" · "+x.year:"")+'</span></a>').join("")+'</div></main><footer>Japan Hidden Gems</footer></body></html>';
+await writeFile(new URL("index.html",output),directory);
+const sitemapPath=new URL("../sitemap.xml",import.meta.url); let sitemap=await readFile(sitemapPath,"utf8");
+sitemap=sitemap.replace(/\s*<!-- GENERATED SONG URLS START -->[\s\S]*?<!-- GENERATED SONG URLS END -->/,"");
+sitemap=sitemap.replace("</urlset>","  <!-- GENERATED SONG URLS START -->\n"+items.map(x=>"  <url><loc>"+x.url+"</loc></url>").join("\n")+"\n  <!-- GENERATED SONG URLS END -->\n</urlset>");
+await writeFile(sitemapPath,sitemap); console.log("Generated "+items.length+" reviewed song pages.");
