@@ -84,10 +84,52 @@
     ].map(([title, body]) => `<div class="catalog-action"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(body)}</span></div>`).join("");
   }
 
+  async function loadYoutubeCandidates() {
+    const container = document.querySelector("#youtubeLinkCandidates");
+    if (!container || !accessToken) return;
+    try {
+      const rows = await rpc("admin_list_youtube_link_candidates");
+      container.innerHTML = (rows || []).map((candidate) => `<article class="song-row">
+        <div class="song-copy">
+          <span class="badge">確認待ち</span>
+          <span class="candidate-confidence">一致度 ${Math.round(Number(candidate.confidence || 0) * 100)}%</span>
+          <h3>${escapeHtml(candidate.song_title)}</h3>
+          <p>${escapeHtml(candidate.song_artist)}</p>
+          <p><strong>候補：</strong>${escapeHtml(candidate.video_title)}</p>
+          <small>${escapeHtml(candidate.channel_name)} · ${escapeHtml((candidate.official_signals || []).join(" / "))}</small>
+        </div>
+        <div class="song-actions">
+          <a href="${escapeHtml(candidate.youtube_url)}" target="_blank" rel="noopener">動画を確認</a>
+          <button type="button" data-youtube-candidate="${candidate.id}" data-accept="true">採用</button>
+          <button class="secondary" type="button" data-youtube-candidate="${candidate.id}" data-accept="false">却下</button>
+        </div>
+      </article>`).join("") || '<p class="empty">確認待ちの候補はありません。</p>';
+    } catch (error) {
+      container.innerHTML = `<p class="error">候補を取得できません：${escapeHtml(error.message)}</p>`;
+    }
+  }
+
+  document.querySelector("#youtubeLinkCandidates")?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-youtube-candidate]");
+    if (!button) return;
+    button.disabled = true;
+    try {
+      await rpc("admin_review_youtube_link_candidate", {
+        p_candidate_id: Number(button.dataset.youtubeCandidate),
+        p_accept: button.dataset.accept === "true"
+      });
+      await loadSongs();
+    } catch (error) {
+      document.querySelector("#adminStatus").textContent = "YouTube候補の処理に失敗しました：" + error.message;
+      button.disabled = false;
+    }
+  });
+
   document.querySelector("#refreshCatalogCoverage")?.addEventListener("click", () => loadSongs());
   const originalLoadSongs = loadSongs;
   loadSongs = async function () {
     await originalLoadSongs();
     renderCatalogCoverage();
+    await loadYoutubeCandidates();
   };
 })();
