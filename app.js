@@ -134,7 +134,7 @@ function setText(selector, value) {
   if (element) element.textContent = value;
 }
 
-const VALID_VIEWS = new Set(["home", "ranking", "genres", "personalized", "favorites", "request", "japan-beta", "listen", "detail", "discover", "artists", "playlists", "history"]);
+const VALID_VIEWS = new Set(["home", "ranking", "genres", "personalized", "favorites", "request", "listen", "detail", "discover", "artists", "playlists", "history", "weekly-mix"]);
 
 function routeFromLocation() {
   const requested = new URLSearchParams(window.location.search).get("view");
@@ -2944,8 +2944,8 @@ function setAudience(
     );
 
   if (scroll) {
-    navigateTo(type === "japan" ? "japan-beta" : "ranking");
-  } else if (type !== "japan" && ["request", "japan-beta"].includes(currentView)) {
+    navigateTo("ranking");
+  } else if (currentView === "japan-beta") {
     navigateTo("ranking", { replace: true });
   }
 }
