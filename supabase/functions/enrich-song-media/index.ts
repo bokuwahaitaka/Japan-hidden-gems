@@ -51,18 +51,39 @@ function initialData(html: string) {
 }
 function score(song: any, renderer: any) {
   const title = textOf(renderer.title), channel = textOf(renderer.ownerText || renderer.shortBylineText);
-  const wantedTitle = song.title_en || song.title, wantedArtist = song.artist_en || song.artist;
-  const titleCoverage = coverage(tokens(wantedTitle), title);
-  const artistCoverage = Math.max(coverage(tokens(wantedArtist), title), coverage(tokens(wantedArtist), channel));
-  const officialChannel = /\bofficial\b|\btopic\b|vevo|records|music/i.test(channel);
+  const wantedTitles = [song.title, song.title_en].filter(Boolean);
+  const wantedArtists = [song.artist, song.artist_en].filter(Boolean);
+  const titleCoverage = Math.max(...wantedTitles.map((value) => coverage(tokens(value), title)), 0);
+  const artistCoverage = Math.max(
+    ...wantedArtists.flatMap((value) => [coverage(tokens(value), title), coverage(tokens(value), channel)]),
+    0,
+  );
+  const normalizedChannel = normalize(channel);
+  const exactArtistChannel = wantedArtists.some((value) => normalize(value) === normalizedChannel);
+  const verifiedArtist = JSON.stringify(renderer.ownerBadges || renderer.badges || []).includes("VERIFIED");
+  const officialMarker = /official|\btopic\b|vevo|sony music|universal music|warner music|avex|victor entertainment|nippon columbia|king records|ponycanyon|lantis|toys factory|j storm/i.test(channel);
+  const officialChannel = officialMarker || verifiedArtist || exactArtistChannel;
   const officialTitle = /official|music video|\bmv\b|\bpv\b/i.test(title);
-  const bad = /cover|karaoke|reaction|tutorial|instrumental|nightcore|sped up|slowed|remix/i.test(title) && !/cover|karaoke|instrumental|remix/i.test(wantedTitle);
-  const live = /\blive\b/i.test(title) && !/\blive\b/i.test(wantedTitle);
+  const wantedText = wantedTitles.join(" ");
+  const bad = /cover|karaoke|reaction|tutorial|instrumental|nightcore|sped up|slowed|remix/i.test(title) && !/cover|karaoke|instrumental|remix/i.test(wantedText);
+  const live = /\blive\b/i.test(title) && !/\blive\b/i.test(wantedText);
   let value = titleCoverage * .54 + artistCoverage * .34 + (officialChannel ? .09 : 0) + (officialTitle ? .03 : 0);
   if (bad) value -= .4;
   if (live) value -= .15;
   const signals = [officialChannel && "official-channel", officialTitle && "official-title", titleCoverage >= .8 && "title-match", artistCoverage >= .8 && "artist-match"].filter(Boolean);
-  return { value: Math.max(0, Math.min(1, value)), title, channel, signals, officialChannel };
+  return {
+    value: Math.max(0, Math.min(1, value)),
+    title,
+    channel,
+    signals,
+    officialChannel,
+    officialMarker,
+    verifiedArtist,
+    exactArtistChannel,
+    titleCoverage,
+    artistCoverage,
+    disqualified: bad || live,
+  };
 }
 async function json(response: Response) {
   const body = await response.text(); let data: any;
@@ -77,10 +98,13 @@ async function fetchSearch(query: string) {
   return findRenderers(initialData(await response.text())).filter((x) => /^[A-Za-z0-9_-]{11}$/.test(x.videoId || ""));
 }
 async function playable(videoId: string) {
-  const response = await fetch(`https://www.youtube.com/watch?v=${videoId}&hl=en`, { headers: { "User-Agent": agent, "Accept-Language": "en" } });
-  if (!response.ok) return false;
-  const html = await response.text();
-  return !/"playabilityStatus"\s*:\s*\{\s*"status"\s*:\s*"(?:ERROR|LOGIN_REQUIRED|UNPLAYABLE)"/.test(html);
+  // oEmbed is public, keyless and quota-free. It avoids false LOGIN_REQUIRED
+  // responses that YouTube sometimes gives server-side watch-page requests.
+  const response = await fetch(
+    `https://www.youtube.com/oembed?url=${encodeURIComponent("https://www.youtube.com/watch?v=" + videoId)}&format=json`,
+    { headers: { "User-Agent": agent, "Accept-Language": "en" } },
+  );
+  return response.ok;
 }
 
 Deno.serve(async (request) => {
@@ -95,22 +119,49 @@ Deno.serve(async (request) => {
     if (isAdmin !== true) return new Response(JSON.stringify({ error: "Administrator access required." }), { status: 403, headers: responseHeaders });
     const payload = await request.json().catch(() => ({}));
     const limit = Math.max(1, Math.min(10, Number(payload?.limit) || 10));
+    const minId = Number.isFinite(Number(payload?.minId)) ? Number(payload.minId) : null;
+    const maxId = Number.isFinite(Number(payload?.maxId)) ? Number(payload.maxId) : null;
     // Defaults to the full backfill so the already-deployed older admin button also starts the queue.
     const runAll = payload?.runAll !== false;
-    const songs = await json(await fetch(supabaseUrl + "/rest/v1/songs?select=id,title,artist,title_en,artist_en&is_hidden=eq.false&youtube_url=is.null&media_enrichment_status=eq.pending&order=id.asc&limit=" + limit, { headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey } }));
+    let songsUrl = supabaseUrl + "/rest/v1/songs?select=id,title,artist,title_en,artist_en&is_hidden=eq.false&youtube_url=is.null&media_enrichment_status=eq.pending&order=id.asc&limit=" + limit;
+    if (minId !== null) songsUrl += "&id=gte." + encodeURIComponent(minId);
+    if (maxId !== null) songsUrl += "&id=lt." + encodeURIComponent(maxId);
+    const songs = await json(await fetch(songsUrl, { headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey } }));
     let updated = 0, review = 0, failed = 0;
     for (const song of songs || []) {
       try {
-        const query = [song.artist_en || song.artist, song.title_en || song.title, "official"].filter(Boolean).join(" ");
-        const ranked = (await fetchSearch(query)).slice(0, 12).map((renderer) => ({ renderer, ...score(song, renderer) })).sort((a, b) => b.value - a.value);
-        const best = ranked.find((x) => x.value >= .55 && x.signals.includes("title-match") && x.signals.includes("artist-match") && x.officialChannel);
+        const queries = [
+          [song.artist, song.title, song.artist_en, song.title_en, "official"],
+          [song.artist, song.title, song.artist_en, song.title_en, "Topic"],
+        ].map((parts) => parts.filter(Boolean).join(" "));
+        const groups = await Promise.all(queries.map((query) => fetchSearch(query)));
+        const seen = new Set<string>();
+        const candidates = groups.flatMap((group) =>
+          group.slice(0, 12).map((renderer, searchRank) => ({ renderer, searchRank, ...score(song, renderer) }))
+        ).filter((candidate) => {
+          const videoId = candidate.renderer.videoId;
+          if (seen.has(videoId)) return false;
+          seen.add(videoId);
+          return true;
+        });
+        const ranked = [...candidates].sort((a, b) => b.value - a.value);
+        const strict = ranked.find((x) => x.value >= .55 && x.signals.includes("title-match") && x.signals.includes("artist-match") && x.officialChannel && !x.disqualified);
+        // Japanese uploads often use kanji/kana while the seed catalog is romanized.
+        // In that case, trust only the first label/verified/artist-owned result from the precise query.
+        const scriptFallback = candidates.find((x) =>
+          x.searchRank <= 3 && x.officialChannel && !x.disqualified &&
+          (x.officialMarker || x.verifiedArtist || x.exactArtistChannel) &&
+          (x.titleCoverage >= .8 || x.artistCoverage >= .8 || x.officialMarker)
+        );
+        const best = strict || scriptFallback;
         if (!best || !(await playable(best.renderer.videoId))) {
           await fetch(supabaseUrl + "/rest/v1/songs?id=eq." + song.id, { method: "PATCH", headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey, "Content-Type": "application/json" }, body: JSON.stringify({ media_enrichment_status: "review", media_source: "youtube-public-search" }) });
           review += 1; continue;
         }
         const videoId = best.renderer.videoId, youtubeUrl = "https://www.youtube.com/watch?v=" + videoId;
-        if (best.value >= .84) {
-          const update = await fetch(supabaseUrl + "/rest/v1/songs?id=eq." + song.id, { method: "PATCH", headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey, "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ youtube_url: youtubeUrl, youtube_video_id: videoId, youtube_thumbnail_url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`, youtube_status: "valid", youtube_checked_at: new Date().toISOString(), media_enrichment_status: "ready", media_match_confidence: Number(best.value.toFixed(3)), media_source: "youtube-public-search", media_enriched_at: new Date().toISOString() }) });
+        const confidence = Number(Math.max(best.value, strict ? best.value : .86).toFixed(3));
+        if (confidence >= .84) {
+          const update = await fetch(supabaseUrl + "/rest/v1/songs?id=eq." + song.id, { method: "PATCH", headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey, "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ youtube_url: youtubeUrl, youtube_video_id: videoId, youtube_thumbnail_url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`, youtube_status: "valid", youtube_checked_at: new Date().toISOString(), media_enrichment_status: "ready", media_match_confidence: confidence, media_source: "youtube-public-search", media_enriched_at: new Date().toISOString() }) });
           if (!update.ok) throw new Error(await update.text());
           updated += 1;
         } else {
@@ -130,7 +181,7 @@ Deno.serve(async (request) => {
       EdgeRuntime.waitUntil(fetch(supabaseUrl + "/functions/v1/enrich-song-media", {
         method: "POST",
         headers: { apikey: anonKey, Authorization: authHeader, "Content-Type": "application/json" },
-        body: JSON.stringify({ limit, runAll: true })
+        body: JSON.stringify({ limit, runAll: true, minId, maxId })
       }).catch((error) => console.error("youtube-public-search-chain", error)));
     }
     return new Response(JSON.stringify({ processed: (songs || []).length, updated, review, failed, continuing, quotaStopped: false, method: "youtube-public-search" }), { headers: responseHeaders });
