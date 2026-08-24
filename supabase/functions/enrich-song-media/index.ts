@@ -95,7 +95,8 @@ Deno.serve(async (request) => {
     if (isAdmin !== true) return new Response(JSON.stringify({ error: "Administrator access required." }), { status: 403, headers: responseHeaders });
     const payload = await request.json().catch(() => ({}));
     const limit = Math.max(1, Math.min(10, Number(payload?.limit) || 10));
-    const runAll = payload?.runAll === true;
+    // Defaults to the full backfill so the already-deployed older admin button also starts the queue.
+    const runAll = payload?.runAll !== false;
     const songs = await json(await fetch(supabaseUrl + "/rest/v1/songs?select=id,title,artist,title_en,artist_en&is_hidden=eq.false&youtube_url=is.null&media_enrichment_status=eq.pending&order=id.asc&limit=" + limit, { headers: { apikey: serviceKey, Authorization: "Bearer " + serviceKey } }));
     let updated = 0, review = 0, failed = 0;
     for (const song of songs || []) {
