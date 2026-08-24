@@ -375,6 +375,65 @@ function songArtwork(song, extraClass = "") {
     : `<div class="${classes} artwork-fallback" aria-label="${title}"><span>JHG</span></div>`;
 }
 
+function renderHomeMvWall() {
+  const wall = $("#homeMvWall");
+  if (!wall) return;
+
+  const thumbnailSongs = songs
+    .filter((song) => song?.youtube_thumbnail_url || youtubeThumbnailUrl(song?.youtube_url))
+    .sort((a, b) => Number(a.id) - Number(b.id))
+    .slice(0, 35);
+
+  if (!thumbnailSongs.length) {
+    wall.replaceChildren();
+    wall.classList.remove("is-ready");
+    return;
+  }
+
+  const laneCount = 5;
+  const lanes = Array.from({ length: laneCount }, () => []);
+  thumbnailSongs.forEach((song, index) => lanes[index % laneCount].push(song));
+
+  const fragment = document.createDocumentFragment();
+
+  lanes.forEach((laneSongs, laneIndex) => {
+    const lane = document.createElement("div");
+    lane.className = "home-mv-lane";
+    lane.style.setProperty("--mv-duration", `${46 + laneIndex * 7}s`);
+
+    const track = document.createElement("div");
+    track.className = "home-mv-track";
+
+    for (let copy = 0; copy < 2; copy += 1) {
+      const set = document.createElement("div");
+      set.className = "home-mv-set";
+
+      laneSongs.forEach((song) => {
+        const frame = document.createElement("div");
+        frame.className = "home-mv-frame";
+
+        const image = document.createElement("img");
+        image.src = song.youtube_thumbnail_url || youtubeThumbnailUrl(song.youtube_url);
+        image.alt = "";
+        image.loading = laneIndex < 3 && copy === 0 ? "eager" : "lazy";
+        image.decoding = "async";
+        image.referrerPolicy = "no-referrer";
+
+        frame.appendChild(image);
+        set.appendChild(frame);
+      });
+
+      track.appendChild(set);
+    }
+
+    lane.appendChild(track);
+    fragment.appendChild(lane);
+  });
+
+  wall.replaceChildren(fragment);
+  requestAnimationFrame(() => wall.classList.add("is-ready"));
+}
+
 function artistIdentity(song) {
   const artist = escapeHtml(songArtist(song));
   const image = song?.artist_image_url
@@ -1637,6 +1696,7 @@ async function loadAll() {
     })
     .filter(Boolean);
 
+  renderHomeMvWall();
   renderStats();
   render();
   renderPersonalized();
