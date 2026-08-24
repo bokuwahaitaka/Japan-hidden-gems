@@ -17,7 +17,28 @@
   function copy() { return translations[language()]; }
   function weekKey(date = new Date()) { const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())); const day = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() - day + 1); return d.toISOString().slice(0,10); }
   function hash(value) { let h = 2166136261; for (const char of String(value)) { h ^= char.charCodeAt(0); h = Math.imul(h,16777619); } return h >>> 0; }
-  function seededSelection(list, limit = 12) { const user = typeof currentUser !== "undefined" && currentUser?.id ? currentUser.id : "guest"; const seed = hash(`${weekKey()}:${user}`); return [...list].sort((a,b) => hash(`${seed}:${a.id}`)-hash(`${seed}:${b.id}`)).slice(0,limit); }
+  function seededSelection(list, limit = 12) {
+    const user = typeof currentUser !== "undefined" && currentUser?.id ? currentUser.id : "guest";
+    const seed = hash(`${weekKey()}:${user}`);
+    const pool = [...list].sort((a,b) => hash(`${seed}:${a.id}`)-hash(`${seed}:${b.id}`));
+    const selected = [], artists = new Set(), buckets = new Set();
+    const bucket = song => `${song.year ? Math.floor(Number(song.year)/10)*10 : "unknown"}:${song.tags?.[0] || "untagged"}`;
+    for (const song of pool) {
+      const artist = String(songArtist(song)).toLocaleLowerCase();
+      const key = bucket(song);
+      if (artists.has(artist) || buckets.has(key)) continue;
+      selected.push(song); artists.add(artist); buckets.add(key);
+      if (selected.length === limit) return selected;
+    }
+    for (const song of pool) {
+      if (selected.some(item => item.id === song.id)) continue;
+      const artist = String(songArtist(song)).toLocaleLowerCase();
+      if (artists.has(artist) && pool.length > limit * 2) continue;
+      selected.push(song); artists.add(artist);
+      if (selected.length === limit) break;
+    }
+    return selected;
+  }
   function nextMonday() { const d = new Date(); const days = ((8 - d.getDay()) % 7) || 7; d.setDate(d.getDate()+days); d.setHours(0,0,0,0); return new Intl.DateTimeFormat(language(),{month:"short",day:"numeric"}).format(d); }
   function set(id, value) { const node = document.getElementById(id); if (node) node.textContent = value; }
   function applyCopy() { const t=copy(); [["growthLoopEyebrow",t.eyebrow],["growthLoopTitle",t.title],["growthLoopCopy",t.copy],["openWeeklyMix",t.open],["weeklyShortcutTitle",t.weekly],["weeklyShortcutCopy",t.weeklyCopy],["replayShortcutTitle",t.replay],["replayShortcutCopy",t.replayCopy],["blendShortcutTitle",t.blend],["blendShortcutCopy",t.blendCopy],["listenShortcutTitle",t.listen],["listenShortcutCopy",t.listenCopy],["weeklyMixEyebrow",t.ritual],["weeklyMixTitle",t.mix],["shareWeeklyMix",t.share]].forEach(([id,value])=>set(id,value)); const ranking=document.querySelector('#weeklyMixSection [data-route="ranking"]'); if(ranking) ranking.textContent=t.ranking; set("weeklyMixMeta",`${t.refresh}: ${nextMonday()}`); }
@@ -33,7 +54,7 @@
   }
   function openRoute(route){ if(typeof navigateTo==="function" && VALID_VIEWS.has(route)) navigateTo(route); else { const url=new URL(location.href); url.searchParams.set("view",route); location.href=url; } }
   async function shareMix(){ const t=copy(); const url=new URL(location.href); url.searchParams.set("view","weekly-mix"); const payload={title:`JHG — ${t.mix}`,text:t.copy,url:url.toString()}; try{ if(navigator.share) await navigator.share(payload); else { await navigator.clipboard.writeText(`${payload.text} ${payload.url}`); if(typeof showStatus==="function") showStatus(language()==="ja"?"共有リンクをコピーしました。":"Share link copied."); } }catch(error){ if(error?.name!=="AbortError" && typeof showStatus==="function") showStatus(error.message,"error"); } }
-  document.addEventListener("click",event=>{ const routeButton=event.target.closest("[data-growth-route]"); if(routeButton){ openRoute(routeButton.dataset.growthRoute); return; } if(event.target.closest("#openWeeklyMix")){ openRoute("weekly-mix"); return; } const rate=event.target.closest("[data-weekly-rate]"); if(rate){ window.openRating?.(Number(rate.dataset.weeklyRate)); return; } });
+  document.addEventListener("click",event=>{ const routeButton=event.target.closest("[data-growth-route]"); if(routeButton){ openRoute(routeButton.dataset.growthRoute); return; } if(event.target.closest("#openWeeklyMix")){ openRoute("weekly-mix"); return; } const rate=event.target.closest("[data-weekly-rate]"); if(rate) window.openRating?.(Number(rate.dataset.weeklyRate)); });
   document.getElementById("shareWeeklyMix")?.addEventListener("click",shareMix);
   document.getElementById("languageSelect")?.addEventListener("change",()=>setTimeout(()=>{applyCopy();renderMix();},0));
   const timer=setInterval(()=>{ if(typeof songs!=="undefined" && songs.length){ clearInterval(timer); applyCopy(); renderMix(); } },250);
