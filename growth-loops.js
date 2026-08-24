@@ -27,16 +27,13 @@
     if(!list.length){ grid.innerHTML=`<p class="muted">${copy().empty}</p>`; return; }
     const t=copy();
     grid.innerHTML=list.map((song,index)=>{
-      const recommended=song.myRecommendation?.recommended;
-      const controls=(typeof audience!=="undefined" && audience==="japan")
-        ? `<button class="action japan-action ${recommended===true?"selected":""}" data-weekly-recommend="true" data-song-id="${song.id}">${t.vote}</button><button class="action japan-action ${recommended===false?"selected":""}" data-weekly-recommend="false" data-song-id="${song.id}">${t.no}</button>`
-        : `<button class="action primary" data-weekly-rate="${song.id}">${t.rate}</button>`;
+      const controls=`<button class="action primary" data-weekly-rate="${song.id}">${t.rate}</button>`;
       return `<article class="weekly-gem-card"><div class="ranking-artwork-wrap">${songArtwork(song,"ranking-artwork")}<span class="rank">${String(index+1).padStart(2,"0")}</span></div><div class="weekly-gem-card-copy"><p class="eyebrow dark">${t.weekly}</p><h3>${escapeHtml(songTitle(song))}</h3><p class="meta">${escapeHtml(songArtist(song))}${song.year?` · ${escapeHtml(song.year)}`:""}</p><div class="weekly-gem-actions">${controls}</div></div></article>`;
     }).join("");
   }
   function openRoute(route){ if(typeof navigateTo==="function" && VALID_VIEWS.has(route)) navigateTo(route); else { const url=new URL(location.href); url.searchParams.set("view",route); location.href=url; } }
   async function shareMix(){ const t=copy(); const url=new URL(location.href); url.searchParams.set("view","weekly-mix"); const payload={title:`JHG — ${t.mix}`,text:t.copy,url:url.toString()}; try{ if(navigator.share) await navigator.share(payload); else { await navigator.clipboard.writeText(`${payload.text} ${payload.url}`); if(typeof showStatus==="function") showStatus(language()==="ja"?"共有リンクをコピーしました。":"Share link copied."); } }catch(error){ if(error?.name!=="AbortError" && typeof showStatus==="function") showStatus(error.message,"error"); } }
-  document.addEventListener("click",event=>{ const routeButton=event.target.closest("[data-growth-route]"); if(routeButton){ openRoute(routeButton.dataset.growthRoute); return; } if(event.target.closest("#openWeeklyMix")){ openRoute("weekly-mix"); return; } const rate=event.target.closest("[data-weekly-rate]"); if(rate){ window.openRating?.(Number(rate.dataset.weeklyRate)); return; } const recommend=event.target.closest("[data-weekly-recommend]"); if(recommend){ window.submitRecommendation?.(Number(recommend.dataset.songId),recommend.dataset.weeklyRecommend==="true"); } });
+  document.addEventListener("click",event=>{ const routeButton=event.target.closest("[data-growth-route]"); if(routeButton){ openRoute(routeButton.dataset.growthRoute); return; } if(event.target.closest("#openWeeklyMix")){ openRoute("weekly-mix"); return; } const rate=event.target.closest("[data-weekly-rate]"); if(rate){ window.openRating?.(Number(rate.dataset.weeklyRate)); return; } });
   document.getElementById("shareWeeklyMix")?.addEventListener("click",shareMix);
   document.getElementById("languageSelect")?.addEventListener("change",()=>setTimeout(()=>{applyCopy();renderMix();},0));
   const timer=setInterval(()=>{ if(typeof songs!=="undefined" && songs.length){ clearInterval(timer); applyCopy(); renderMix(); } },250);
