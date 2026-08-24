@@ -36,7 +36,7 @@
         </select>
         <button id="refreshSongs" type="button">再読み込み</button>
         <button id="backfillTags" type="button">既存曲をAIタグ付け</button>
-        <button id="enrichSongMedia" type="button">YouTube・画像を補完（20曲）</button>
+        <button id="enrichSongMedia" type="button">APIなしでYouTube照合（10曲）</button>
         <button id="enrichApplePreviews" type="button">Apple公式プレビュー補完（10曲）</button>
         <button id="clearSeedMetrics" class="danger" type="button">初期参考スコアを一括削除</button>
         <button id="logoutBtn" class="secondary" type="button">ログアウト</button>
@@ -67,6 +67,12 @@
           <div id="catalogCoverageMatrix"></div>
         </div>
         <div id="catalogNextActions" class="catalog-next-actions"></div>
+        <section class="catalog-candidates" aria-labelledby="youtubeCandidatesTitle">
+          <div class="catalog-heading">
+            <div><h3 id="youtubeCandidatesTitle">YouTube候補の確認</h3><p>自動確定できなかった公式動画候補です。動画を開いてから採用または却下してください。</p></div>
+          </div>
+          <div id="youtubeLinkCandidates" class="song-list"><p class="empty">候補を読み込み中…</p></div>
+        </section>
       </section>
       <section class="panel">
         <h2>利用者からのタグ報告</h2>
