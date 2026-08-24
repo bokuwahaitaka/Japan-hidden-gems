@@ -1,0 +1,22 @@
+.growth-loop-home{padding-top:clamp(2.5rem,6vw,5.5rem);padding-bottom:clamp(2.5rem,6vw,5rem)}
+.growth-loop-head{align-items:end;gap:1.5rem}
+.growth-loop-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-top:2rem}
+.growth-loop-actions button{min-height:10rem;padding:1.4rem;text-align:left;background:var(--paper,#fffdf8);border:1px solid var(--line,#d9d0c2);border-radius:1.4rem;cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.growth-loop-actions button:hover,.growth-loop-actions button:focus-visible{transform:translateY(-3px);border-color:var(--accent,#df4b32);box-shadow:0 16px 34px rgba(26,22,18,.08)}
+.growth-loop-actions strong,.growth-loop-actions span{display:block}
+.growth-loop-actions strong{font-size:1.05rem;margin-bottom:.65rem;color:var(--ink,#171512)}
+.growth-loop-actions span{font-size:.9rem;line-height:1.45;color:var(--muted,#746f67)}
+.weekly-mix-section{padding-top:clamp(2rem,5vw,4.5rem);padding-bottom:5rem}
+.weekly-mix-head{align-items:end;gap:1.5rem}
+.weekly-mix-actions{display:flex;gap:.75rem;flex-wrap:wrap}
+.weekly-mix-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2rem;margin-top:2rem}
+.weekly-gem-card{overflow:hidden;background:var(--paper,#fffdf8);border:1px solid var(--line,#d9d0c2);border-radius:1.35rem}
+.weekly-gem-card .song-artwork{aspect-ratio:16/10;border-radius:0;border:0;width:100%;height:auto}
+.weekly-gem-card-copy{padding:1.2rem}
+.weekly-gem-card-copy h3{margin:.25rem 0 .3rem;font-size:clamp(1.15rem,2vw,1.55rem);line-height:1.15}
+.weekly-gem-card-copy .meta{margin-bottom:1rem;color:var(--muted,#746f67)}
+.weekly-gem-actions{display:flex;gap:.55rem;flex-wrap:wrap}
+.weekly-gem-actions .action{flex:1 1 auto}
+.weekly-refresh-note{font-size:.9rem;color:var(--muted,#746f67)}
+@media(max-width:900px){.growth-loop-actions,.weekly-mix-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.growth-loop-head,.weekly-mix-head{align-items:flex-start}.growth-loop-actions,.weekly-mix-grid{grid-template-columns:1fr}.growth-loop-actions button{min-height:7rem}.weekly-mix-actions{width:100%}.weekly-mix-actions .button{flex:1}}
