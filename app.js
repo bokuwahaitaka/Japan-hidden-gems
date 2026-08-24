@@ -996,7 +996,6 @@ function renderProfileForm(group) {
   const dialog = $("#profileDialog");
   const country = $("#profileCountry");
   const ageBand = $("#profileAgeBand");
-  const genreList = $("#profileGenres");
 
   $("#profileGroup").value = group;
   $("#profileTitle").textContent =
@@ -1041,16 +1040,6 @@ function renderProfileForm(group) {
 
   ageBand.value = listenerProfile?.age_band ?? "";
 
-  genreList.innerHTML = genreOptions
-    .map((genre) => {
-      const checked = selectedGenreIds.includes(Number(genre.id));
-      return '<label class="genre-option">' +
-        '<input type="checkbox" name="profileGenre" value="' +
-        Number(genre.id) + '"' + (checked ? " checked" : "") + ">" +
-        "<span>" + escapeHtml(genre.label_en) + "</span></label>";
-    })
-    .join("");
-
   $("#profileError").textContent = "";
   dialog.showModal();
 }
@@ -1065,8 +1054,6 @@ async function saveListenerProfile(event) {
   const group = $("#profileGroup").value;
   const countryCode = $("#profileCountry").value.trim().toUpperCase();
   const ageBand = $("#profileAgeBand").value;
-  const genreIds = [...document.querySelectorAll('input[name="profileGenre"]:checked')]
-    .map((input) => Number(input.value));
 
   const error = $("#profileError");
 
@@ -1089,10 +1076,6 @@ async function saveListenerProfile(event) {
     return;
   }
 
-  if (genreIds.length < 1 || genreIds.length > 5) {
-    error.textContent = "Choose between 1 and 5 genres.";
-    return;
-  }
 
   await withBusy(async () => {
     try {
@@ -1109,35 +1092,12 @@ async function saveListenerProfile(event) {
         })
       });
 
-      await rest(
-        "listener_genre_preferences?user_id=eq." +
-          encodeURIComponent(currentUser.id),
-        {
-          method: "DELETE",
-          authenticated: true,
-          headers: { Prefer: "return=minimal" }
-        }
-      );
-
-      await rest("listener_genre_preferences", {
-        method: "POST",
-        authenticated: true,
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify(
-          genreIds.map((genreId) => ({
-            user_id: currentUser.id,
-            genre_id: genreId
-          }))
-        )
-      });
-
       listenerProfile = {
         user_id: currentUser.id,
         listener_group: group,
         country_code: countryCode,
         age_band: ageBand
       };
-      selectedGenreIds = genreIds;
       setAudience(group);
       $("#profileDialog").close();
       showStatus("Your anonymous profile was saved.");
