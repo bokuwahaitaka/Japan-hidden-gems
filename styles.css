@@ -1155,3 +1155,45 @@ h1,h2,h3,.brand,.rank,.stats strong{
   .home-mv-wall{inset:0;transform:none;transition:none}
   .home-mv-track{animation:none;transform:translateY(-8%)}
 }
+
+
+/* Overseas-only home and collision-free compact navigation */
+.hero .hero-grid{
+  grid-template-columns:minmax(0,820px);
+  justify-content:start;
+}
+@media (max-width:560px){
+  .site-header{position:relative}
+  .header-inner{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto auto auto;
+    gap:10px;
+    padding-block:12px;
+  }
+  .brand{
+    grid-column:1;
+    grid-row:1;
+    justify-self:center;
+  }
+  .header-actions{
+    grid-column:1;
+    grid-row:2;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    width:100%;
+    overflow:visible;
+    padding:0;
+  }
+  .primary-nav{
+    grid-column:1;
+    grid-row:3;
+    width:100%;
+    justify-content:flex-start;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:5px;
+  }
+  .header-actions .button{width:100%;min-width:0}
+  .hero{padding-top:72px}
+}
