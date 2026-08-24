@@ -281,10 +281,10 @@ async function backfillAiTags() {
 
 async function enrichSongMedia() {
   const button = $("#enrichSongMedia");
-  if (!window.confirm("未補完の曲から20曲をYouTube公式APIで検索し、動画・ジャケット・アーティスト画像を保存します。続行しますか？")) return;
+  if (!window.confirm("YouTubeリンク未設定の全曲を、公開検索で順番に照合します。APIクォータは使用しません。高信頼の公式動画だけ自動保存し、曖昧な候補は確認待ちにします。開始しますか？")) return;
 
   button.disabled = true;
-  $("#adminStatus").textContent = "YouTube・画像を補完中…（20曲で数十秒かかる場合があります）";
+  $("#adminStatus").textContent = "YouTubeリンクを照合中…（10曲で数十秒かかる場合があります）";
 
   try {
     const response = await fetch(SUPABASE_URL + "/functions/v1/enrich-song-media", {
@@ -294,18 +294,17 @@ async function enrichSongMedia() {
         Authorization: "Bearer " + accessToken,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ limit: 20 })
+      body: JSON.stringify({ limit: 10, runAll: true })
     });
     const result = await parseResponse(response);
     await loadSongs();
 
-    const quotaNote = result.quotaStopped
-      ? "｜本日のYouTube検索上限に達しました。翌日、同じボタンで続きから再開できます。"
-      : "";
     $("#adminStatus").textContent =
-      "メディア補完：処理 " + Number(result.processed || 0) +
-      "曲、登録 " + Number(result.updated || 0) +
-      "曲、要確認 " + Number(result.review || 0) + "曲" + quotaNote;
+      "API不使用のYouTube照合：処理 " + Number(result.processed || 0) +
+      "曲、自動登録 " + Number(result.updated || 0) +
+      "曲、確認待ち " + Number(result.review || 0) +
+      "曲、失敗 " + Number(result.failed || 0) + "曲" +
+      (result.continuing ? "｜残りの曲もバックグラウンドで続けています。" : "｜全対象の確認が完了しました。");
   } catch (error) {
     $("#adminStatus").textContent = "メディア補完に失敗しました：" + error.message;
   } finally {

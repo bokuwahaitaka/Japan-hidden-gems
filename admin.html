@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>曲管理 — Japan Hidden Gems</title>
-  <link rel="stylesheet" href="admin.css?v=1" />
+  <link rel="stylesheet" href="admin.css?v=2" />
 </head>
 <body>
   <main class="admin-shell">
@@ -36,12 +36,44 @@
         </select>
         <button id="refreshSongs" type="button">再読み込み</button>
         <button id="backfillTags" type="button">既存曲をAIタグ付け</button>
-        <button id="enrichSongMedia" type="button">YouTube・画像を補完（20曲）</button>
+        <button id="enrichSongMedia" type="button">APIなしで全曲YouTube照合</button>
         <button id="enrichApplePreviews" type="button">Apple公式プレビュー補完（10曲）</button>
         <button id="clearSeedMetrics" class="danger" type="button">初期参考スコアを一括削除</button>
         <button id="logoutBtn" class="secondary" type="button">ログアウト</button>
       </div>
       <p id="adminStatus" class="status" aria-live="polite"></p>
+      <section id="catalogCoverage" class="panel catalog-coverage" aria-labelledby="catalogCoverageTitle">
+        <div class="catalog-heading">
+          <div>
+            <p class="eyebrow">CATALOG HEALTH</p>
+            <h2 id="catalogCoverageTitle">カタログ充実度</h2>
+            <p>ジャンル・年代・動画・プレビューの不足を確認し、次に追加すべき曲を判断します。</p>
+          </div>
+          <button id="refreshCatalogCoverage" class="secondary" type="button">集計を更新</button>
+        </div>
+        <div id="catalogCoverageSummary" class="catalog-summary" aria-live="polite"></div>
+        <div class="catalog-dashboard-grid">
+          <div>
+            <h3>ジャンル別</h3>
+            <div id="catalogGenreCoverage" class="coverage-list"></div>
+          </div>
+          <div>
+            <h3>年代別</h3>
+            <div id="catalogEraCoverage" class="coverage-list"></div>
+          </div>
+        </div>
+        <div class="catalog-matrix-wrap">
+          <h3>年代 × ジャンル</h3>
+          <div id="catalogCoverageMatrix"></div>
+        </div>
+        <div id="catalogNextActions" class="catalog-next-actions"></div>
+        <section class="catalog-candidates" aria-labelledby="youtubeCandidatesTitle">
+          <div class="catalog-heading">
+            <div><h3 id="youtubeCandidatesTitle">YouTube候補の確認</h3><p>自動確定できなかった公式動画候補です。動画を開いてから採用または却下してください。</p></div>
+          </div>
+          <div id="youtubeLinkCandidates" class="song-list"><p class="empty">候補を読み込み中…</p></div>
+        </section>
+      </section>
       <section class="panel">
         <h2>利用者からのタグ報告</h2>
         <div id="tagReports" class="song-list"></div>
@@ -84,10 +116,12 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=8"></script>
+  <script src="admin.js?v=10"></script>
+  <script src="admin-catalog.js?v=2"></script>
   <script src="admin-feedback.js?v=1"></script>
   <script src="admin-growth.js?v=1"></script>
   <script src="admin-community.js?v=1"></script>
-  <script src="admin-global.js?v=1"></script>\n  <script src="admin-beta.js?v=1"></script>
+  <script src="admin-global.js?v=1"></script>
+  <script src="admin-beta.js?v=1"></script>
 </body>
 </html>

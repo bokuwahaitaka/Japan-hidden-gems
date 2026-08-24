@@ -5,9 +5,7 @@ function performanceSortedSongs() {
   const sorted = [...songs];
   const mode = document.querySelector("#sortSelect")?.value || "score";
 
-  if (mode === "japan") {
-    sorted.sort((a, b) => safe(b.japan, -1) - safe(a.japan, -1));
-  } else if (mode === "awareness") {
+  if (mode === "awareness") {
     sorted.sort((a, b) => safe(a.awareness, 101) - safe(b.awareness, 101));
   } else if (mode === "rating") {
     sorted.sort((a, b) => safe(b.overseas, -1) - safe(a.overseas, -1));
@@ -19,7 +17,6 @@ function performanceSortedSongs() {
 }
 
 function performanceCard(song, index) {
-  const recommended = song.myRecommendation?.recommended;
   const scoreText = song.score === null ? ui("Pending", "集計待ち") : song.score;
   const scoreSuffix = song.score === null ? "" : " / 100";
 
@@ -42,7 +39,6 @@ function performanceCard(song, index) {
         </div>
 
         <div class="metrics">
-          <p><span>${ui("Japan recommendation", "日本での推薦率")}</span><strong>${metric(song.japan, "%")}</strong></p>
           <p><span>${ui("Overseas awareness", "海外での認知度")}</span><strong>${metric(song.awareness, "%")}</strong></p>
           <p><span>${ui("Post-listening rating", "視聴後評価")}</span><strong>${metric(song.overseas, " / 5")}</strong></p>
         </div>
@@ -52,7 +48,6 @@ function performanceCard(song, index) {
         </div>
 
         <p class="sample-note">
-          ${song.recommendationTotal} ${ui("Japan votes", "件の日本投票")} ·
           ${song.overseasTotal} ${ui("overseas responses", "件の海外回答")} ·
           ${song.postListenRatingCount} ${ui("ratings", "件の評価")}
         </p>
@@ -60,12 +55,6 @@ function performanceCard(song, index) {
         <div class="actions">
           <button class="action primary overseas-action" onclick="window.openRating(${song.id})">
             ${ui("Listen & Rate", "聴いて評価")}
-          </button>
-          <button class="action japan-action ${recommended === true ? "selected" : ""}" onclick="window.submitRecommendation(${song.id}, true)">
-            ${recommended === true ? ui("Recommended ✓", "推薦済み ✓") : ui("Recommend", "推薦する")}
-          </button>
-          <button class="action japan-action ${recommended === false ? "selected" : ""}" onclick="window.submitRecommendation(${song.id}, false)">
-            ${recommended === false ? ui("Not for me ✓", "推薦しない ✓") : ui("Not for me", "推薦しない")}
           </button>
         </div>
       </div>
