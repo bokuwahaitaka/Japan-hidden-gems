@@ -100,7 +100,46 @@
 
   function activateSong(id) {
     if(state.activeId!==id){stopAllPlayers(id);state.activeId=id;}
+    prepareAdjacent(id);
+    prunePlayers(id);
     autoplaySong(id).catch(()=>{});
+  }
+
+  function cardFor(id) {
+    return document.querySelector(`[data-v2-card][data-song-id="${id}"]`);
+  }
+
+  function advanceToNext(id) {
+    if(Number(state.activeId)!==Number(id)||document.hidden||currentView!==VIEW)return;
+    const current=cardFor(id), next=current?.nextElementSibling;
+    if(!next?.matches?.("[data-v2-card]"))return;
+    stopAllPlayers();
+    state.activeId=null;
+    next.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function prepareAdjacent(id) {
+    const current=cardFor(id), next=current?.nextElementSibling;
+    if(!next?.matches?.("[data-v2-card]"))return;
+    const song=byId(Number(next.dataset.songId));
+    if(usesApple(song)&&!state.appleAudio.has(Number(song.id))){
+      const audio=new Audio();audio.preload="metadata";audio.src=song.apple_preview_url;
+      state.appleAudio.set(Number(song.id),audio);
+    }
+    const img=next.querySelector(".v2-swipe-cover");
+    if(img)img.loading="eager";
+  }
+
+  function prunePlayers(activeId) {
+    const cards=[...document.querySelectorAll("[data-v2-card]")], activeIndex=cards.findIndex(card=>Number(card.dataset.songId)===Number(activeId));
+    state.players.forEach((player,id)=>{
+      const index=cards.findIndex(card=>Number(card.dataset.songId)===Number(id));
+      if(index>=0&&Math.abs(index-activeIndex)>1){try{player.destroy?.();}catch{}state.players.delete(id);const host=document.querySelector(`#v2-player-${id}`);if(host)host.textContent="";}
+    });
+    state.appleAudio.forEach((audio,id)=>{
+      const index=cards.findIndex(card=>Number(card.dataset.songId)===Number(id));
+      if(index>=0&&Math.abs(index-activeIndex)>1){try{audio.pause();audio.removeAttribute("src");audio.load();}catch{}state.appleAudio.delete(id);}
+    });
   }
 
   let ytReady;
@@ -117,7 +156,7 @@
   async function autoplaySong(id) {
     const song=byId(id); if(!song||!hasPreview(song))return;
     if(document.hidden||currentView!==VIEW)return;
-    if(videoId(song)){
+    if(videoId(song)&&!usesApple(song)){
       const existing=state.players.get(id);
       if(existing){
         const start=Number(song.preview_start_seconds)||0,duration=Math.max(15,Math.min(30,Number(song.preview_duration_seconds)||20));
@@ -142,7 +181,7 @@
         audio=new Audio(song.apple_preview_url);audio.preload="none";state.appleAudio.set(id,audio);
         audio.addEventListener("play",()=>handlePlaybackState(id,true));
         audio.addEventListener("pause",()=>handlePlaybackState(id,false));
-        audio.addEventListener("ended",()=>handlePlaybackState(id,false));
+        audio.addEventListener("ended",()=>{handlePlaybackState(id,false);advanceToNext(id);});
         audio.addEventListener("error",()=>{
           handlePlaybackState(id,false);state.appleAudio.delete(id);song.apple_preview_status="failed";
           showStatus("Apple preview is temporarily unavailable.","error");
@@ -169,6 +208,7 @@
   function handlePlayerState(id, playerState) {
     document.querySelector(`[data-v2-card][data-song-id="${id}"]`)?.classList.toggle("is-playing",playerState===1);
     handlePlaybackState(id,playerState===1);
+    if(playerState===0)advanceToNext(id);
   }
 
   function handlePlaybackState(id, playing) {
@@ -185,7 +225,7 @@
     if(!usesApple(song)){
       const player=state.players.get(id);if(!player)return;
       const start=Number(song.preview_start_seconds)||0,duration=Math.max(15,Math.min(30,Number(song.preview_duration_seconds)||20));
-      if((player.getCurrentTime?.()||start)-start>=duration)player.pauseVideo();
+      if((player.getCurrentTime?.()||start)-start>=duration)advanceToNext(id);
     }
   }
 
