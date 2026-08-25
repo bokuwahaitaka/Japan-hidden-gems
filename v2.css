@@ -3,8 +3,9 @@
 .v2-swipe-feed::-webkit-scrollbar{display:none}
 .v2-swipe-card{position:relative;min-height:calc(100svh - 76px);scroll-snap-align:start;scroll-snap-stop:always;display:grid;place-items:center;overflow:hidden;background:#111}
 .v2-swipe-bg{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;filter:blur(28px) brightness(.42);transform:scale(1.08)}
-.v2-swipe-cover{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#0b0b0b}
-.v2-swipe-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.06) 38%,rgba(0,0,0,.88) 100%)}
+.v2-swipe-cover{position:absolute;z-index:1;inset:0;width:100%;height:100%;object-fit:contain;background:#0b0b0b;transition:opacity .28s ease}
+.v2-swipe-card.is-playing .v2-swipe-cover{opacity:0}
+.v2-swipe-shade{position:absolute;z-index:2;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.06) 38%,rgba(0,0,0,.88) 100%);pointer-events:none}
 .v2-swipe-copy{position:absolute;z-index:2;left:max(22px,5vw);right:110px;bottom:max(30px,5vh)}
 .v2-swipe-copy h1{font:700 clamp(1.55rem,4vw,2.7rem)/1.05 system-ui,sans-serif;margin:0 0 8px;text-wrap:balance}
 .v2-swipe-copy p{margin:0 0 8px;color:#ddd;font:600 1rem/1.4 system-ui,sans-serif}
@@ -15,7 +16,8 @@
 .v2-action.is-on{background:#ef4d37;color:#fff}
 .v2-preview{border:1px solid rgba(255,255,255,.6);background:rgba(0,0,0,.5);color:#fff;border-radius:999px;padding:10px 16px;font-weight:800}
 .v2-apple-credit{display:block;margin-top:10px;color:#ddd;font:600 .72rem/1.4 system-ui,sans-serif}.v2-apple-credit a{color:#fff;text-decoration:underline;text-underline-offset:3px}
-.v2-player-host{position:absolute;width:1px;height:1px;opacity:.01;pointer-events:none}
+.v2-player-host{position:absolute;z-index:1;inset:0;overflow:hidden;pointer-events:none;background:#0b0b0b}
+.v2-player-host iframe{position:absolute;left:50%;top:50%;width:max(100%,177.78vh);height:max(100%,56.25vw);transform:translate(-50%,-50%);border:0}
 .v2-empty{min-height:70svh;display:grid;place-items:center;text-align:center;padding:40px}
 .v2-comment-sheet{position:fixed;z-index:999;left:0;right:0;bottom:0;height:min(78svh,760px);background:#fbf8f2;color:#171717;border-radius:24px 24px 0 0;box-shadow:0 -20px 70px rgba(0,0,0,.35);transform:translateY(105%);transition:transform .24s ease;display:flex;flex-direction:column}
 .v2-comment-sheet.is-open{transform:translateY(0)}

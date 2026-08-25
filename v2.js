@@ -5,14 +5,15 @@
   const PROFILE_VIEW = "profile-v2";
   const DISCOVERY_SECONDS = 8;
   const SEEN_KEY = "jhg:v2:swipe-seen";
+  const SOUND_KEY = "jhg:v2:sound-on";
   const state = {
     catalog: [], queue: [], likes: new Set(), knew: new Set(), activeId: null,
     players: new Map(), appleAudio: new Map(), playback: new Map(), commentsSongId: null, replyTo: null,
-    profile: null, profileTab: "discovered"
+    profile: null, profileTab: "discovered", soundOn: sessionStorage.getItem(SOUND_KEY) === "true"
   };
 
   const copy = {
-    en: { discover:"Discover", like:"Like", comments:"Comments", save:"Save", knew:"Knew it", preview:"Play preview", stop:"Stop preview", noSongs:"No preview-ready songs yet.", appleCredit:"Preview provided courtesy of Apple Music", appleListen:"Listen on Apple Music", commentTitle:"Comments", reply:"Reply", post:"Post", placeholder:"Add a comment…", discovered:"Gems Discovered", liked:"Liked songs", saved:"Saved songs", profileComments:"Comments", genres:"Favorite genres", eras:"Favorite eras" },
+    en: { discover:"Discover", like:"Like", comments:"Comments", save:"Save", knew:"Knew it", preview:"Play preview", stop:"Stop preview", soundOn:"Sound on", soundOff:"Sound off", noSongs:"No preview-ready songs yet.", appleCredit:"Preview provided courtesy of Apple Music", appleListen:"Listen on Apple Music", commentTitle:"Comments", reply:"Reply", post:"Post", placeholder:"Add a comment…", discovered:"Gems Discovered", liked:"Liked songs", saved:"Saved songs", profileComments:"Comments", genres:"Favorite genres", eras:"Favorite eras" },
     ja: { discover:"見つける", like:"好き", comments:"コメント", save:"保存", knew:"知ってた", preview:"プレビュー再生", stop:"停止", noSongs:"プレビュー対応曲がまだありません。", appleCredit:"Apple Music提供のプレビュー", appleListen:"Apple Musicで聴く", commentTitle:"コメント", reply:"返信", post:"投稿", placeholder:"コメントを追加…", discovered:"発見したGems", liked:"Likeした曲", saved:"保存した曲", profileComments:"コメント", genres:"好きなジャンル", eras:"好きな年代" },
     ko: { discover:"발견", like:"좋아요", comments:"댓글", save:"저장", knew:"알고 있었어요", preview:"미리듣기", stop:"정지", noSongs:"미리듣기 가능한 곡이 없습니다.", appleCredit:"Apple Music 제공 미리듣기", appleListen:"Apple Music에서 듣기", commentTitle:"댓글", reply:"답글", post:"게시", placeholder:"댓글 추가…", discovered:"발견한 Gems", liked:"좋아요한 곡", saved:"저장한 곡", profileComments:"댓글", genres:"좋아하는 장르", eras:"좋아하는 시대" },
     zh: { discover:"发现", like:"喜欢", comments:"评论", save:"保存", knew:"听过", preview:"播放预览", stop:"停止", noSongs:"暂无可预览歌曲。", appleCredit:"Apple Music 提供的试听", appleListen:"在 Apple Music 中收听", commentTitle:"评论", reply:"回复", post:"发布", placeholder:"添加评论…", discovered:"已发现 Gems", liked:"喜欢的歌曲", saved:"已保存歌曲", profileComments:"评论", genres:"喜欢的流派", eras:"喜欢的年代" },
@@ -76,7 +77,7 @@
     return `<article class="v2-swipe-card" data-v2-card data-song-id="${id}">
       ${img?`<img class="v2-swipe-bg" src="${esc(img)}" alt=""><img class="v2-swipe-cover" src="${esc(img)}" alt="${esc(title)}">`:`<div class="v2-swipe-cover artwork-fallback">JHG</div>`}
       <div class="v2-swipe-shade"></div><div class="v2-player-host" id="v2-player-${id}"></div>
-      <div class="v2-swipe-copy"><h1>${esc(title)}</h1><p>${esc(artist)}${song.year?` · ${esc(song.year)}`:""}</p><small>${esc((song.tags||[]).slice(0,3).map(x=>x.label_en||x.label_ja).filter(Boolean).join(" · "))}</small><br><button class="v2-preview" type="button" data-v2-preview="${id}">▶ ${esc(t("preview"))}</button>${appleCredit}</div>
+      <div class="v2-swipe-copy"><h1>${esc(title)}</h1><p>${esc(artist)}${song.year?` · ${esc(song.year)}`:""}</p><small>${esc((song.tags||[]).slice(0,3).map(x=>x.label_en||x.label_ja).filter(Boolean).join(" · "))}</small><br><button class="v2-preview" type="button" data-v2-sound="${id}" aria-pressed="${state.soundOn}">${state.soundOn?"🔊":"🔇"} ${esc(t(state.soundOn?"soundOn":"soundOff"))}</button>${appleCredit}</div>
       <aside class="v2-swipe-actions">${actionButton("like",id,state.likes.has(id))}${actionButton("comments",id,false)}${actionButton("save",id,favoriteSongIds?.has(id))}${actionButton("knew",id,state.knew.has(id))}</aside>
     </article>`;
   }
@@ -98,8 +99,8 @@
   }
 
   function activateSong(id) {
-    if(state.activeId===id)return;
-    stopAllPlayers(id); state.activeId=id;
+    if(state.activeId!==id){stopAllPlayers(id);state.activeId=id;}
+    autoplaySong(id).catch(()=>{});
   }
 
   let ytReady;
@@ -113,10 +114,29 @@
     }); return ytReady;
   }
 
-  async function togglePreview(id) {
+  async function autoplaySong(id) {
     const song=byId(id); if(!song||!hasPreview(song))return;
+    if(document.hidden||currentView!==VIEW)return;
+    if(videoId(song)){
+      const existing=state.players.get(id);
+      if(existing){
+        const start=Number(song.preview_start_seconds)||0,duration=Math.max(15,Math.min(30,Number(song.preview_duration_seconds)||20));
+        const position=existing.getCurrentTime?.()||0;
+        if(position<start||position>=start+duration-.5)existing.seekTo?.(start,true);
+        state.soundOn?existing.unMute?.():existing.mute?.();
+        existing.playVideo?.();
+        return;
+      }
+      const YT=await youtubeReady();
+      if(state.activeId!==id||document.hidden||currentView!==VIEW)return;
+      const player=new YT.Player(`v2-player-${id}`,{height:"100%",width:"100%",videoId:videoId(song),playerVars:{autoplay:1,mute:1,playsinline:1,controls:0,disablekb:1,rel:0,start:Number(song.preview_start_seconds)||0,origin:location.origin},events:{
+        onReady:e=>{state.players.set(id,e.target);if(state.activeId!==id||currentView!==VIEW){e.target.pauseVideo?.();return;}e.target.seekTo(Number(song.preview_start_seconds)||0,true);e.target.mute?.();e.target.playVideo();if(state.soundOn)e.target.unMute?.();},
+        onStateChange:e=>handlePlayerState(id,e.data)
+      }});
+      state.players.set(id,player);
+      return;
+    }
     if(usesApple(song)){
-      activateSong(id);
       let audio=state.appleAudio.get(id);
       if(!audio){
         audio=new Audio(song.apple_preview_url);audio.preload="none";state.appleAudio.set(id,audio);
@@ -125,32 +145,37 @@
         audio.addEventListener("ended",()=>handlePlaybackState(id,false));
         audio.addEventListener("error",()=>{
           handlePlaybackState(id,false);state.appleAudio.delete(id);song.apple_preview_status="failed";
-          if(videoId(song))togglePreview(id).catch(()=>{});else showStatus("Apple preview is temporarily unavailable.","error");
+          showStatus("Apple preview is temporarily unavailable.","error");
         });
       }
-      audio.paused?await audio.play():audio.pause();
-      return;
+      audio.muted=!state.soundOn;
+      if(audio.ended)audio.currentTime=0;
+      if(audio.paused)await audio.play().catch(()=>{});
     }
-    if(!videoId(song))return;
-    activateSong(id); const existing=state.players.get(id);
-    if(existing){ const playing=existing.getPlayerState?.()===1; playing?existing.pauseVideo():existing.playVideo(); return; }
-    const YT=await youtubeReady();
-    const player=new YT.Player(`v2-player-${id}`,{height:"1",width:"1",videoId:videoId(song),playerVars:{playsinline:1,controls:0,rel:0,start:Number(song.preview_start_seconds)||0,origin:location.origin},events:{
-      onReady:e=>{state.players.set(id,e.target);e.target.seekTo(Number(song.preview_start_seconds)||0,true);e.target.playVideo();},
-      onStateChange:e=>handlePlayerState(id,e.data)
-    }}); state.players.set(id,player);
+  }
+
+  function toggleSound() {
+    state.soundOn=!state.soundOn;
+    sessionStorage.setItem(SOUND_KEY,String(state.soundOn));
+    state.players.forEach(player=>state.soundOn?player.unMute?.():player.mute?.());
+    state.appleAudio.forEach(audio=>{audio.muted=!state.soundOn;});
+    document.querySelectorAll("[data-v2-sound]").forEach(button=>{
+      button.setAttribute("aria-pressed",String(state.soundOn));
+      button.textContent=`${state.soundOn?"🔊":"🔇"} ${t(state.soundOn?"soundOn":"soundOff")}`;
+    });
+    if(state.activeId)autoplaySong(state.activeId).catch(()=>{});
   }
 
   function handlePlayerState(id, playerState) {
+    document.querySelector(`[data-v2-card][data-song-id="${id}"]`)?.classList.toggle("is-playing",playerState===1);
     handlePlaybackState(id,playerState===1);
   }
 
   function handlePlaybackState(id, playing) {
     const info=state.playback.get(id)||{seconds:0,token:crypto.randomUUID(),qualified:false,timer:null,lastTick:0};
     state.playback.set(id,info);
-    const button=document.querySelector(`[data-v2-preview="${id}"]`);
-    if(playing){info.lastTick=performance.now();if(button)button.textContent=`■ ${t("stop")}`;clearInterval(info.timer);info.timer=setInterval(()=>playbackTick(id),500);}
-    else {clearInterval(info.timer);info.timer=null;if(button)button.textContent=`▶ ${t("preview")}`;persistPreview(id).catch(()=>{});}
+    if(playing){info.lastTick=performance.now();clearInterval(info.timer);info.timer=setInterval(()=>playbackTick(id),500);}
+    else {clearInterval(info.timer);info.timer=null;persistPreview(id).catch(()=>{});}
   }
 
   function playbackTick(id) {
@@ -167,6 +192,7 @@
   function stopAllPlayers(exceptId=null) {
     state.players.forEach((player,id)=>{if(id!==exceptId){try{player.pauseVideo?.();}catch{} persistPreview(id).catch(()=>{});}});
     state.appleAudio.forEach((audio,id)=>{if(id!==exceptId){try{audio.pause();audio.currentTime=0;}catch{} persistPreview(id).catch(()=>{});}});
+    document.querySelectorAll("[data-v2-card]").forEach(card=>{if(Number(card.dataset.songId)!==Number(exceptId))card.classList.remove("is-playing");});
   }
 
   async function persistPreview(id) {
@@ -287,7 +313,8 @@
     VALID_VIEWS.add(VIEW);VALID_VIEWS.add(PROFILE_VIEW);ensureSheet();
     document.addEventListener("click",async e=>{
       const route=e.target.closest('[data-route="swipe"]');if(route)setTimeout(()=>enterSwipe().catch(err=>showStatus(err.message,"error")),0);
-      const preview=e.target.closest("[data-v2-preview]");if(preview)await togglePreview(Number(preview.dataset.v2Preview));
+      if(e.target.closest("[data-route]")&&!route)setTimeout(()=>stopAllPlayers(),0);
+      const sound=e.target.closest("[data-v2-sound]");if(sound)toggleSound();
       const action=e.target.closest("[data-v2-action]");if(action){const type=action.dataset.v2Action,id=Number(action.dataset.songId);if(type==="comments")await openComments(id);else await toggleAction(type,id,action);}
       if(e.target.closest("[data-v2-close]")){const s=document.querySelector("#v2CommentSheet");s.classList.remove("is-open");s.setAttribute("aria-hidden","true");}
       const reply=e.target.closest("[data-v2-reply]");if(reply){state.replyTo=reply.dataset.v2Reply;document.querySelector("#v2CommentForm input").focus();}
@@ -298,6 +325,7 @@
     });
     document.addEventListener("submit",e=>{if(e.target.id==="v2CommentForm"){e.preventDefault();submitComment(e.target).catch(err=>showStatus(err.message,"error"));}});
     window.addEventListener("popstate",()=>{const v=new URLSearchParams(location.search).get("view");if(v===VIEW)enterSwipe().catch(()=>{});if(v===PROFILE_VIEW)renderProfile(new URLSearchParams(location.search).get("profile")).catch(()=>{});else stopAllPlayers();});
+    document.addEventListener("visibilitychange",()=>{if(document.hidden)stopAllPlayers();else if(currentView===VIEW&&state.activeId)autoplaySong(state.activeId).catch(()=>{});});
     const baseSet=window.setInterfaceLanguage || setInterfaceLanguage;
     window.setInterfaceLanguage=setInterfaceLanguage=function(language,persist=true){const result=baseSet(language,persist);const label=document.querySelector("#v2DiscoverNavLabel");if(label)label.textContent=t("discover");if(currentView===VIEW&&state.catalog.length)renderFeed();return result;};
     const requested=new URLSearchParams(location.search).get("view");if(requested===VIEW)setTimeout(()=>enterSwipe().catch(err=>showStatus(err.message,"error")),0);if(requested===PROFILE_VIEW)setTimeout(()=>renderProfile(new URLSearchParams(location.search).get("profile")).catch(err=>showStatus(err.message,"error")),0);
