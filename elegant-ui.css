@@ -1,0 +1,231 @@
+/* JHG elegant interaction layer — loaded last so every feature shares one visual language. */
+:root{
+  --jhg-ivory:#f5f0e8;
+  --jhg-surface:#fffdf9;
+  --jhg-surface-raised:#fffefa;
+  --jhg-ink:#181512;
+  --jhg-muted:#746e66;
+  --jhg-line:rgba(62,48,36,.16);
+  --jhg-gold:#a77932;
+  --jhg-coral:#d95136;
+  --jhg-coral-deep:#a93624;
+  --jhg-shadow-sm:0 3px 0 rgba(71,48,30,.12),0 9px 22px rgba(54,39,25,.08);
+  --jhg-shadow-md:0 7px 0 rgba(67,43,25,.10),0 22px 52px rgba(50,34,20,.13);
+  --jhg-shadow-hover:0 4px 0 rgba(67,43,25,.11),0 17px 36px rgba(50,34,20,.17);
+  --jhg-radius:20px;
+  --jhg-radius-sm:13px;
+  --jhg-ease:cubic-bezier(.2,.75,.25,1);
+}
+
+body{
+  color:var(--jhg-ink);
+  background:
+    radial-gradient(circle at 10% 0%,rgba(190,145,75,.09),transparent 28rem),
+    linear-gradient(rgba(47,34,23,.025) 1px,transparent 1px),
+    var(--jhg-ivory);
+  background-size:auto,100% 34px,auto;
+}
+
+/* A soft editorial header with clearly pressable navigation. */
+.site-header{
+  border-bottom:1px solid var(--jhg-line);
+  background:rgba(255,253,249,.92);
+  box-shadow:0 8px 30px rgba(48,34,21,.07);
+}
+.brand-button{padding:10px 2px!important;border-radius:10px!important}
+.brand-button:focus-visible{outline:3px solid rgba(217,81,54,.25);outline-offset:4px}
+.primary-nav{
+  gap:7px;
+  padding:7px;
+  border:1px solid var(--jhg-line);
+  background:rgba(255,255,255,.72);
+  box-shadow:inset 0 1px rgba(255,255,255,.9),0 7px 22px rgba(56,40,25,.07);
+}
+.nav-item{
+  min-height:42px;
+  padding:10px 15px;
+  border:1px solid transparent!important;
+  transition:transform .18s var(--jhg-ease),background .18s ease,color .18s ease,box-shadow .18s ease!important;
+}
+.nav-item:hover{
+  color:var(--jhg-ink);
+  border-color:var(--jhg-line)!important;
+  background:#fff!important;
+  box-shadow:0 3px 10px rgba(48,33,20,.09);
+  transform:translateY(-1px);
+}
+.nav-item.is-active{
+  border-color:#111!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.12),0 4px 12px rgba(20,16,12,.18);
+}
+
+/* Buttons now look tactile: light on top, weight underneath, and movement on press. */
+button,.button,.action,[role="button"]{
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .16s var(--jhg-ease),box-shadow .16s ease,background-color .16s ease,border-color .16s ease,color .16s ease,opacity .16s ease;
+}
+.button,.action,
+.growth-loop-actions button,
+.weekly-mix-actions button,
+.home-spotlight-actions button,
+.v2-action-button,
+.club-action,
+.global-action,
+.retention-action{
+  position:relative;
+  border:1px solid rgba(50,36,25,.22)!important;
+  border-radius:999px!important;
+  background:linear-gradient(180deg,#fffefa 0%,#f7f0e7 100%);
+  color:var(--jhg-ink);
+  box-shadow:var(--jhg-shadow-sm);
+  font-weight:850;
+}
+.button:not(:disabled):hover,.action:not(:disabled):hover,
+.growth-loop-actions button:not(:disabled):hover,
+.weekly-mix-actions button:not(:disabled):hover,
+.home-spotlight-actions button:not(:disabled):hover{
+  border-color:rgba(217,81,54,.5)!important;
+  box-shadow:var(--jhg-shadow-hover);
+  transform:translateY(-2px);
+}
+.button:not(:disabled):active,.action:not(:disabled):active,
+.growth-loop-actions button:not(:disabled):active,
+.weekly-mix-actions button:not(:disabled):active,
+.home-spotlight-actions button:not(:disabled):active,
+.nav-item:not(:disabled):active{
+  transform:translateY(2px) scale(.99);
+  box-shadow:0 1px 0 rgba(50,36,25,.12),0 4px 10px rgba(50,36,25,.09);
+}
+.button:not(.button-ghost),.action.primary,.profile-submit,.auth-primary,
+.candidate-add,#openWeeklyMix,.hero-discovery-cta{
+  border-color:var(--jhg-coral-deep)!important;
+  background:linear-gradient(180deg,#e76549 0%,var(--jhg-coral) 52%,#c63f28 100%)!important;
+  color:#fff!important;
+  box-shadow:0 4px 0 #8f2d1e,0 12px 25px rgba(183,55,34,.23)!important;
+  text-shadow:0 1px 1px rgba(73,18,10,.24);
+}
+.button:not(.button-ghost):hover,.action.primary:hover,.profile-submit:hover,.auth-primary:hover,
+.candidate-add:hover,#openWeeklyMix:hover,.hero-discovery-cta:hover{
+  filter:saturate(1.08) brightness(1.03);
+  box-shadow:0 5px 0 #8f2d1e,0 18px 32px rgba(183,55,34,.27)!important;
+}
+.button:focus-visible,.action:focus-visible,button:focus-visible,[role="button"]:focus-visible,
+select:focus-visible,input:focus-visible,textarea:focus-visible{
+  outline:3px solid rgba(217,81,54,.27)!important;
+  outline-offset:3px!important;
+}
+button:disabled,.button:disabled,.action:disabled{filter:grayscale(.25);box-shadow:none!important;transform:none!important}
+
+/* Fields and filters look like deliberate controls instead of plain boxes. */
+.select,.text-input,input:not([type="checkbox"]):not([type="radio"]),textarea,
+.language-control select{
+  min-height:48px;
+  border:1px solid rgba(64,48,34,.22)!important;
+  border-radius:var(--jhg-radius-sm)!important;
+  background-color:rgba(255,254,250,.96)!important;
+  box-shadow:inset 0 2px 5px rgba(51,37,24,.06),0 1px 0 rgba(255,255,255,.9);
+}
+.select:hover,.text-input:hover,input:not([type="checkbox"]):not([type="radio"]):hover,
+textarea:hover,.language-control select:hover{border-color:rgba(167,121,50,.65)!important}
+.filter-field,.form-field{gap:8px}.filter-field>span,.form-field>span{color:#4f4841;font-weight:850}
+
+/* Editorial surfaces: warmer, layered, and visibly interactive. */
+.card,.personalized-card,.favorite-card,.similar-song-card,
+.growth-loop-actions button,.weekly-mix-card,.genre-card,.artist-card,.playlist-card,
+.community-card,.club-card,.global-card,.retention-card{
+  border:1px solid var(--jhg-line)!important;
+  border-radius:var(--jhg-radius)!important;
+  background:linear-gradient(145deg,rgba(255,254,251,.98),rgba(250,246,239,.96))!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.96),var(--jhg-shadow-sm);
+}
+.card,.personalized-card,.favorite-card,.similar-song-card,
+.growth-loop-actions button,.weekly-mix-card,.genre-card,.artist-card,.playlist-card{
+  transition:transform .24s var(--jhg-ease),box-shadow .24s ease,border-color .24s ease;
+}
+.card:hover,.personalized-card:hover,.favorite-card:hover,.similar-song-card:hover,
+.growth-loop-actions button:hover,.weekly-mix-card:hover,.genre-card:hover,.artist-card:hover,.playlist-card:hover{
+  border-color:rgba(167,121,50,.42)!important;
+  box-shadow:0 8px 0 rgba(74,50,30,.08),0 26px 48px rgba(54,37,22,.14);
+  transform:translateY(-4px);
+}
+.section-head{border-top-color:var(--jhg-gold);border-top-width:3px}
+.eyebrow.dark{color:var(--jhg-coral);letter-spacing:.2em}
+.badge,.song-tag-pill{
+  border-color:rgba(167,121,50,.3)!important;
+  background:rgba(255,249,237,.9)!important;
+  color:#625139;
+}
+
+/* Artwork receives a subtle gallery-frame treatment. */
+.song-artwork,.ranking-artwork,.home-music-thumb{
+  border-radius:15px;
+  box-shadow:0 10px 28px rgba(24,17,10,.20);
+}
+.home-music-thumb{border:1px solid rgba(255,255,255,.34)!important}
+.home-music-thumb::before{
+  content:"▶";
+  position:absolute;
+  left:50%;top:50%;z-index:2;
+  display:grid;place-items:center;
+  width:42px;height:42px;
+  border:1px solid rgba(255,255,255,.72);
+  border-radius:50%;
+  color:#17130f;background:rgba(255,253,247,.9);
+  box-shadow:0 8px 22px rgba(0,0,0,.25);
+  opacity:0;transform:translate(-50%,-44%) scale(.9);
+  transition:opacity .2s ease,transform .2s var(--jhg-ease);
+}
+.home-music-thumb:hover::before,.home-music-thumb:focus-visible::before{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.home-feature{
+  border-radius:20px;
+  border-color:rgba(255,255,255,.42);
+  box-shadow:0 12px 0 rgba(0,0,0,.22),0 35px 90px rgba(0,0,0,.48);
+  overflow:hidden;
+}
+.home-feature-art::after{box-shadow:0 4px 0 rgba(0,0,0,.24),0 12px 24px rgba(0,0,0,.30)}
+
+dialog{
+  border:1px solid rgba(255,255,255,.7);
+  border-radius:24px;
+  background:linear-gradient(145deg,#fffefa,#f7f0e6);
+  box-shadow:0 12px 0 rgba(35,24,15,.10),0 40px 100px rgba(28,19,12,.30);
+}
+.dialog-close,.home-spotlight-close,.mobile-menu-toggle{
+  display:grid;place-items:center;
+  border:1px solid rgba(55,40,28,.22)!important;
+  background:linear-gradient(180deg,#fff,#eee7dd)!important;
+  color:var(--jhg-ink)!important;
+  box-shadow:0 3px 0 rgba(55,40,28,.13),0 8px 18px rgba(55,40,28,.10);
+}
+
+@media(max-width:720px){
+  .site-header{box-shadow:0 5px 20px rgba(48,34,21,.09)}
+  .mobile-menu-toggle{border-radius:13px!important}
+  .mobile-bottom-nav{
+    border-top:1px solid var(--jhg-line);
+    background:rgba(255,253,249,.97);
+    box-shadow:0 -10px 28px rgba(47,32,19,.10);
+  }
+  .mobile-bottom-nav button{border-radius:12px}
+  .mobile-bottom-nav button.is-active{
+    background:rgba(217,81,54,.10);
+    color:var(--jhg-coral-deep);
+    box-shadow:inset 0 0 0 1px rgba(217,81,54,.15);
+  }
+  .mobile-more-menu button,.mobile-more-menu label{
+    border-radius:15px!important;
+    box-shadow:var(--jhg-shadow-sm);
+  }
+  .hero-discovery-cta{min-height:52px;padding-inline:22px}
+  .section{padding-block:70px}
+  .cards{gap:22px}
+  .card:hover,.personalized-card:hover,.favorite-card:hover,.similar-song-card:hover,
+  .growth-loop-actions button:hover,.weekly-mix-card:hover,.genre-card:hover,.artist-card:hover,.playlist-card:hover{
+    transform:none;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  button,.button,.action,.card,.personalized-card,.favorite-card,.similar-song-card,
+  .growth-loop-actions button,.weekly-mix-card,.genre-card,.artist-card,.playlist-card{transition:none!important}
+}
