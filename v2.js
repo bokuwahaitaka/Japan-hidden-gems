@@ -122,9 +122,8 @@
     const current=cardFor(id), next=current?.nextElementSibling;
     if(!next?.matches?.("[data-v2-card]"))return;
     const song=byId(Number(next.dataset.songId));
-    if(usesApple(song)&&!state.appleAudio.has(Number(song.id))){
-      const audio=new Audio();audio.preload="metadata";audio.src=song.apple_preview_url;
-      state.appleAudio.set(Number(song.id),audio);
+    if(usesApple(song)&&!document.querySelector(`link[data-v2-preload="${song.id}"]`)){
+      const preload=document.createElement("link");preload.rel="preload";preload.as="audio";preload.href=song.apple_preview_url;preload.dataset.v2Preload=String(song.id);document.head.appendChild(preload);
     }
     const img=next.querySelector(".v2-swipe-cover");
     if(img)img.loading="eager";
