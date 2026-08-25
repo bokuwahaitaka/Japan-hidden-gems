@@ -115,6 +115,21 @@ select:focus-visible,input:focus-visible,textarea:focus-visible{
   outline-offset:3px!important;
 }
 button:disabled,.button:disabled,.action:disabled{filter:grayscale(.25);box-shadow:none!important;transform:none!important}
+.text-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:38px;
+  padding:8px 12px!important;
+  border:1px solid rgba(64,48,34,.18)!important;
+  border-radius:999px!important;
+  background:rgba(255,253,248,.82)!important;
+  color:var(--jhg-coral-deep)!important;
+  box-shadow:0 2px 0 rgba(55,40,28,.10),0 6px 14px rgba(55,40,28,.07);
+  text-decoration:none;
+}
+.text-button:not(:disabled):hover{border-color:rgba(217,81,54,.44)!important;background:#fff!important;transform:translateY(-1px)}
+.text-button:not(:disabled):active{transform:translateY(1px);box-shadow:0 1px 0 rgba(55,40,28,.10)}
 
 /* Fields and filters look like deliberate controls instead of plain boxes. */
 .select,.text-input,input:not([type="checkbox"]):not([type="radio"]),textarea,
