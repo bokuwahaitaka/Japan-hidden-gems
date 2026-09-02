@@ -200,18 +200,22 @@ textarea:hover,.language-control select:hover{border-color:rgba(167,121,50,.65)!
 .home-feature-art::after{box-shadow:0 4px 0 rgba(0,0,0,.24),0 12px 24px rgba(0,0,0,.30)}
 
 dialog{
+  position:relative;
   border:1px solid rgba(255,255,255,.7);
   border-radius:24px;
   background:linear-gradient(145deg,#fffefa,#f7f0e6);
   box-shadow:0 12px 0 rgba(35,24,15,.10),0 40px 100px rgba(28,19,12,.30);
 }
 .dialog-close-form{display:contents}
-.auth-dialog #closeAuthDialog{
+dialog>.dialog-close,
+dialog>.dialog-close-form>.dialog-close{
   position:absolute;
   inset-block-start:18px;
   inset-inline-end:18px;
   z-index:10;
+  float:none;
 }
+dialog>.eyebrow{padding-inline-end:64px}
 
 /* Keep every desktop navigation target reachable without allowing page overflow. */
 @media(min-width:721px){

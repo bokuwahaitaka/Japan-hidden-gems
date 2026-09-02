@@ -39,7 +39,7 @@
   <link rel="stylesheet" href="growth-loops.css?v=1" />
   <link rel="stylesheet" href="blind-discovery.css?v=1" />
   <link rel="stylesheet" href="home-experience.css?v=1" />
-  <link rel="stylesheet" href="elegant-ui.css?v=3" />
+  <link rel="stylesheet" href="elegant-ui.css?v=4" />
 </head>
 <body>
   <aside id="betaBanner" class="beta-banner" aria-label="Beta notice">
@@ -83,9 +83,9 @@
     <section class="v2-swipe-screen screen-panel" data-screen="swipe" aria-label="Song discovery feed">
       <div id="v2SwipeFeed" class="v2-swipe-feed"></div>
     </section>
-    <section class="v2-profile-screen screen-panel" data-screen="profile-v2">
+    <div class="v2-profile-screen screen-panel" data-screen="profile-v2">
       <div id="v2Profile" class="v2-profile-shell"></div>
-    </section>
+    </div>
     <section class="hero screen-panel is-active" data-screen="home">
       <div id="homeMusicCanvas" class="home-music-canvas" role="region" aria-label="Featured music videos"></div>
       <div class="home-mv-scrim" aria-hidden="true"></div>
@@ -114,7 +114,7 @@
       </div>
     </section>
 
-    <section class="stats screen-panel is-active" data-screen="home"><div class="shell stats-grid"><div><strong id="songCount">0</strong><span id="songCountLabel">songs</span></div><div><strong id="japanVoteCount">0</strong><span id="japanVoteLabel">ratings</span></div><div><strong id="overseasResponseCount">0</strong><span id="overseasResponseLabel">discovery checks</span></div></div></section>
+    <div class="stats screen-panel is-active" data-screen="home"><div class="shell stats-grid"><div><strong id="songCount">0</strong><span id="songCountLabel">songs</span></div><div><strong id="japanVoteCount">0</strong><span id="japanVoteLabel">ratings</span></div><div><strong id="overseasResponseCount">0</strong><span id="overseasResponseLabel">discovery checks</span></div></div></div>
     <section id="growthLoopHome" class="shell section growth-loop-home screen-panel is-active" data-screen="home">
       <div class="section-head growth-loop-head">
         <div><p id="growthLoopEyebrow" class="eyebrow dark">YOUR WEEK IN J-POP</p><h2 id="growthLoopTitle">A fresh reason to return.</h2></div>
@@ -219,10 +219,10 @@
       <div id="cards" class="cards"><p class="muted">Loading songs…</p></div>
     </section>
 
-    <section id="listenScreen" class="screen-panel" data-screen="listen">
+    <div id="listenScreen" class="screen-panel" data-screen="listen">
       <div class="shell view-toolbar"><button id="listenBackBtn" class="button button-ghost" type="button">← Back</button></div>
       <div id="ratingSections" class="rating-sections"></div>
-    </section>
+    </div>
     <section class="shell section compact screen-panel is-active" data-screen="home"><p id="methodEyebrow" class="eyebrow dark">METHOD</p><h2 id="methodTitle">What makes a hidden gem?</h2><p id="methodCopy" class="section-copy">A song ranks highly when few listeners knew it beforehand and people rate it highly after listening.</p><p id="methodNote" class="section-copy">Early results are marked provisional until enough responses are collected.</p></section>
   </main>
 

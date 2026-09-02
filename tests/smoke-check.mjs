@@ -15,6 +15,7 @@ for (const file of readdirSync(root).filter((name) => name.endsWith(".js"))) {
 const index = read("index.html");
 const app = read("app.js");
 const performance = read("performance.js");
+const elegantUi = read("elegant-ui.css");
 const ids = [...index.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const duplicateIds = [...new Set(ids.filter((id, position) => ids.indexOf(id) !== position))];
 check(duplicateIds.length === 0, `index.html: duplicate IDs: ${duplicateIds.join(", ")}`);
@@ -36,6 +37,20 @@ check(
   /<form method="dialog" class="dialog-close-form">[\s\S]*?id="closeAuthDialog"/.test(index),
   "index.html: account dialog close control needs a native dialog fallback"
 );
+for (const id of ["closeProfileDialog", "closeAuthDialog", "closeSimilarSongsDialog", "closeDialog"]) {
+  check(index.includes(`id="${id}"`), `index.html: missing dialog close control #${id}`);
+}
+check(
+  /dialog>\.dialog-close,[\s\S]*?dialog>\.dialog-close-form>\.dialog-close\{[\s\S]*?position:absolute;[\s\S]*?z-index:10;/.test(elegantUi),
+  "elegant-ui.css: dialog close controls must stay above dialog content"
+);
+for (const semanticWrapper of [
+  /<section[^>]+data-screen="profile-v2"/,
+  /<section[^>]+class="stats screen-panel/,
+  /<section[^>]+id="listenScreen"/
+]) {
+  check(!semanticWrapper.test(index), "index.html: view-only wrapper must not be an unlabelled section");
+}
 check(
   !/<h2>Have you heard this song before\?<\/h2>/.test(performance),
   "performance.js: rating UI bypasses localization"
