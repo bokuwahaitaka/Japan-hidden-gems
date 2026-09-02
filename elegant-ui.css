@@ -206,6 +206,12 @@ dialog{
   box-shadow:0 12px 0 rgba(35,24,15,.10),0 40px 100px rgba(28,19,12,.30);
 }
 .dialog-close-form{display:contents}
+.auth-dialog #closeAuthDialog{
+  position:absolute;
+  inset-block-start:18px;
+  inset-inline-end:18px;
+  z-index:10;
+}
 
 /* Keep every desktop navigation target reachable without allowing page overflow. */
 @media(min-width:721px){
