@@ -367,7 +367,14 @@
     const url=new URL(location.href);url.searchParams.set("view",PROFILE_VIEW);if(handle)url.searchParams.set("profile",handle);else url.searchParams.delete("profile");history.pushState({jhgRoute:true,view:PROFILE_VIEW},"",url);renderView(PROFILE_VIEW);renderProfile(handle).catch(err=>showStatus(err.message,"error"));
   }
 
+  async function waitForAuthenticatedUser(timeoutMs=12000) {
+    const started=Date.now();
+    while(!uid()&&Date.now()-started<timeoutMs)await new Promise(resolve=>setTimeout(resolve,100));
+    if(!uid())throw new Error("Could not initialize the anonymous listener session.");
+  }
+
   async function enterSwipe() {
+    await waitForAuthenticatedUser();
     if(!state.catalog.length){await loadCatalog();await loadOwnStates();renderFeed();}
   }
 

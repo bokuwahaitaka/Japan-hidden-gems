@@ -64,6 +64,7 @@ check(
 check(v2.includes("data-v2-next"), "v2.js: Discover needs an explicit Next button");
 check(v2.includes("data-v2-rating"), "v2.js: Discover needs an inline rating control");
 check(v2.includes("state.queue[state.index]"), "v2.js: Discover must render one song at a time");
+check(v2.includes("await waitForAuthenticatedUser()"), "v2.js: direct Discover links must wait for authentication");
 check(!v2.includes("scrollIntoView"), "v2.js: swipe-based song navigation returned");
 check(!v2Css.includes("scroll-snap-type"), "v2.css: swipe snapping returned");
 check(!/playerState===0\)advanceToNext/.test(v2), "v2.js: media ending must not advance automatically");
