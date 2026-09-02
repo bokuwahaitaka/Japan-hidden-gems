@@ -16,6 +16,8 @@ const index = read("index.html");
 const app = read("app.js");
 const performance = read("performance.js");
 const elegantUi = read("elegant-ui.css");
+const v2 = read("v2.js");
+const v2Css = read("v2.css");
 const ids = [...index.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const duplicateIds = [...new Set(ids.filter((id, position) => ids.indexOf(id) !== position))];
 check(duplicateIds.length === 0, `index.html: duplicate IDs: ${duplicateIds.join(", ")}`);
@@ -59,6 +61,12 @@ check(
   performance.includes('routeFromLocation() === "listen" ? songFromLocation() : null'),
   "performance.js: active rating view is not preserved during catalog refresh"
 );
+check(v2.includes("data-v2-next"), "v2.js: Discover needs an explicit Next button");
+check(v2.includes("data-v2-rating"), "v2.js: Discover needs an inline rating control");
+check(v2.includes("state.queue[state.index]"), "v2.js: Discover must render one song at a time");
+check(!v2.includes("scrollIntoView"), "v2.js: swipe-based song navigation returned");
+check(!v2Css.includes("scroll-snap-type"), "v2.css: swipe snapping returned");
+check(!/playerState===0\)advanceToNext/.test(v2), "v2.js: media ending must not advance automatically");
 
 const localAssets = [...index.matchAll(/(?:src|href)="([^"?#]+)(?:[?#][^"]*)?"/g)]
   .map((match) => match[1])
