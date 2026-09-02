@@ -255,10 +255,10 @@ performanceSortedSongs = function () {
 async function loadFeatureData() {
   if (!currentUser?.id) return;
   const [playlists, playlistSongs, history, feeds] = await Promise.all([
-    rest("playlists?select=id,name,description,created_at,updated_at&order=updated_at.desc", { authenticated: true }),
-    rest("playlist_songs?select=playlist_id,song_id,position,added_at&order=position.asc,added_at.asc", { authenticated: true }),
-    rest("listening_history?select=song_id,first_opened_at,last_opened_at,open_count&order=last_opened_at.desc&limit=50", { authenticated: true }),
-    rest("rpc/get_discovery_feeds", {
+    optionalRest("playlists?select=id,name,description,created_at,updated_at&order=updated_at.desc", { authenticated: true }),
+    optionalRest("playlist_songs?select=playlist_id,song_id,position,added_at&order=position.asc,added_at.asc", { authenticated: true }),
+    optionalRest("listening_history?select=song_id,first_opened_at,last_opened_at,open_count&order=last_opened_at.desc&limit=50", { authenticated: true }),
+    optionalRest("rpc/get_discovery_feeds", {
       method: "POST",
       authenticated: true,
       body: JSON.stringify({})

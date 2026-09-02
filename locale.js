@@ -56,14 +56,38 @@ const D={
 "Languages":{ja:"言語",ko:"언어",zh:"语言",ru:"Языки",es:"Idiomas",fr:"Langues"},
 "A reason to listen again":{ja:"また聴きたくなる場所",ko:"다시 듣고 싶은 이유",zh:"再次聆听的理由",ru:"Повод послушать снова",es:"Una razón para volver a escuchar",fr:"Une raison de réécouter"},
 "Today's J-pop discovery":{ja:"今日のJ-POP発見",ko:"오늘의 J-POP 발견",zh:"今日J-POP发现",ru:"J-pop открытие дня",es:"Descubrimiento J-pop de hoy",fr:"Découverte J-pop du jour"},
-"Your music profile":{ja:"あなたの音楽プロフィール",ko:"나의 음악 프로필",zh:"你的音乐档案",ru:"Ваш музыкальный профиль",es:"Tu perfil musical",fr:"Votre profil musical"}
+"Your music profile":{ja:"あなたの音楽プロフィール",ko:"나의 음악 프로필",zh:"你的音乐档案",ru:"Ваш музыкальный профиль",es:"Tu perfil musical",fr:"Votre profil musical"},
+"Recommend a Japanese song.":{ja:"日本の曲を推薦する",ko:"일본 노래를 추천하세요.",zh:"推荐一首日本歌曲。",ru:"Порекомендуйте японскую песню.",es:"Recomienda una canción japonesa.",fr:"Recommandez un titre japonais."},
+"Search for an official YouTube music video, check the result, and add it to JHG.":{ja:"YouTubeで公式ミュージックビデオを検索し、内容を確認してJHGに追加します。",ko:"YouTube에서 공식 뮤직비디오를 검색하고 확인한 뒤 JHG에 추가하세요.",zh:"在 YouTube 搜索官方音乐视频，确认后添加到 JHG。",ru:"Найдите официальный клип на YouTube, проверьте результат и добавьте его в JHG.",es:"Busca el vídeo musical oficial en YouTube, comprueba el resultado y añádelo a JHG.",fr:"Recherchez le clip officiel sur YouTube, vérifiez le résultat et ajoutez-le à JHG."},
+"Song title or artist":{ja:"曲名またはアーティスト",ko:"노래 제목 또는 아티스트",zh:"歌曲名或艺人",ru:"Название или исполнитель",es:"Título o artista",fr:"Titre ou artiste"},
+"Search YouTube":{ja:"YouTubeを検索",ko:"YouTube 검색",zh:"搜索 YouTube",ru:"Поиск на YouTube",es:"Buscar en YouTube",fr:"Rechercher sur YouTube"},
+"Only official or authorized music videos should be selected. Existing video IDs are reused to avoid duplicate requests.":{ja:"公式または許諾済みのミュージックビデオだけを選択してください。同じ動画の重複登録は防止されます。",ko:"공식 또는 승인된 뮤직비디오만 선택하세요. 같은 동영상의 중복 등록은 방지됩니다.",zh:"请只选择官方或获授权的音乐视频。系统会阻止重复添加同一视频。",ru:"Выбирайте только официальные или разрешённые клипы. Повторное добавление одного видео блокируется.",es:"Elige solo vídeos oficiales o autorizados. Se impiden duplicados del mismo vídeo.",fr:"Choisissez uniquement des clips officiels ou autorisés. Les doublons d’une même vidéo sont bloqués."},
+"Listener profile in Japan":{ja:"日本のリスナープロフィール",ko:"일본 청취자 프로필",zh:"日本听众资料",ru:"Профиль слушателя в Японии",es:"Perfil de oyente en Japón",fr:"Profil d’auditeur au Japon"},
+"Tell us where you’re listening from":{ja:"聴いている地域を教えてください",ko:"어디에서 듣고 있는지 알려주세요",zh:"请告诉我们你的收听地区",ru:"Укажите, откуда вы слушаете",es:"Cuéntanos desde dónde escuchas",fr:"Indiquez-nous d’où vous écoutez"},
+"Choose a region":{ja:"地域を選択",ko:"지역 선택",zh:"选择地区",ru:"Выберите регион",es:"Elige una región",fr:"Choisissez une région"},
+"Choose an age band":{ja:"年代を選択",ko:"연령대 선택",zh:"选择年龄段",ru:"Выберите возрастную группу",es:"Elige una franja de edad",fr:"Choisissez une tranche d’âge"},
+"Choose between 1 and 5 genres.":{ja:"ジャンルを1〜5個選んでください。",ko:"장르를 1~5개 선택하세요.",zh:"请选择 1 到 5 个曲风。",ru:"Выберите от 1 до 5 жанров.",es:"Elige entre 1 y 5 géneros.",fr:"Choisissez entre 1 et 5 genres."},
+"Your anonymous profile was saved.":{ja:"匿名プロフィールを保存しました。",ko:"익명 프로필을 저장했습니다.",zh:"匿名资料已保存。",ru:"Анонимный профиль сохранён.",es:"Se guardó tu perfil anónimo.",fr:"Votre profil anonyme a été enregistré."},
+"Prior awareness":{ja:"視聴前の認知",ko:"사전 인지도",zh:"收听前认知",ru:"Знали ли вы раньше",es:"Conocimiento previo",fr:"Connaissance préalable"},
+"Yes, I knew it":{ja:"はい、知っていました",ko:"네, 알고 있었어요",zh:"是的，我听说过",ru:"Да, я знал(а)",es:"Sí, ya la conocía",fr:"Oui, je la connaissais"},
+"No, this is my first listen":{ja:"いいえ、初めて聴きます",ko:"아니요, 처음 들어요",zh:"没有，这是第一次听",ru:"Нет, слушаю впервые",es:"No, es la primera vez",fr:"Non, c’est ma première écoute"},
+"First listen: how would you rate it?":{ja:"初めて聴いた評価は？",ko:"처음 들은 평가는 어떤가요?",zh:"初次收听，你会如何评分？",ru:"Как вы оцените первое прослушивание?",es:"¿Cómo valorarías esta primera escucha?",fr:"Comment notez-vous cette première écoute ?"},
+"1 out of 5":{ja:"5段階中1",ko:"5점 만점에 1점",zh:"5 分中的 1 分",ru:"1 из 5",es:"1 de 5",fr:"1 sur 5"},
+"2 out of 5":{ja:"5段階中2",ko:"5점 만점에 2점",zh:"5 分中的 2 分",ru:"2 из 5",es:"2 de 5",fr:"2 sur 5"},
+"3 out of 5":{ja:"5段階中3",ko:"5점 만점에 3점",zh:"5 分中的 3 分",ru:"3 из 5",es:"3 de 5",fr:"3 sur 5"},
+"4 out of 5":{ja:"5段階中4",ko:"5점 만점에 4점",zh:"5 分中的 4 分",ru:"4 из 5",es:"4 de 5",fr:"4 sur 5"},
+"5 out of 5":{ja:"5段階中5",ko:"5점 만점에 5점",zh:"5 分中的 5 分",ru:"5 из 5",es:"5 de 5",fr:"5 sur 5"},
+"Save and continue":{ja:"保存して続ける",ko:"저장하고 계속",zh:"保存并继续",ru:"Сохранить и продолжить",es:"Guardar y continuar",fr:"Enregistrer et continuer"},
+"Could not load the site.":{ja:"サイトを読み込めませんでした。",ko:"사이트를 불러올 수 없습니다.",zh:"无法加载网站。",ru:"Не удалось загрузить сайт.",es:"No se pudo cargar el sitio.",fr:"Impossible de charger le site."}
 };
 const reverse=new Map();
 Object.entries(D).forEach(([en,values])=>{reverse.set(en,en);Object.values(values).forEach(value=>reverse.set(value,en))});
-function valueFor(text){const key=reverse.get(text.trim());if(!key)return null;if(interfaceLanguage==='en')return key;return D[key]?.[interfaceLanguage]||key}
+function translate(text,language=interfaceLanguage){const clean=String(text??'').trim(),key=reverse.get(clean)||clean;if(language==='en')return key;return D[key]?.[language]||key}
+function valueFor(text){const key=reverse.get(text.trim());return key?translate(key):null}
 function localizeTree(root=document.body){if(!root)return;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(node){const p=node.parentElement;if(!p||['SCRIPT','STYLE','TEXTAREA'].includes(p.tagName))return NodeFilter.FILTER_REJECT;return node.data.trim()?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);nodes.forEach(node=>{const before=node.data,spaceStart=before.match(/^\s*/)?.[0]||'',spaceEnd=before.match(/\s*$/)?.[0]||'',translated=valueFor(before.trim());if(translated&&translated!==before.trim())node.data=spaceStart+translated+spaceEnd});document.querySelectorAll('[placeholder],[aria-label]').forEach(el=>['placeholder','aria-label'].forEach(attr=>{if(!el.hasAttribute(attr))return;const next=valueFor(el.getAttribute(attr));if(next)el.setAttribute(attr,next)}))}
 const original=setInterfaceLanguage;
 setInterfaceLanguage=function(language,persist=true){original(language,persist);queueMicrotask(()=>localizeTree())};
 document.addEventListener('DOMContentLoaded',()=>{localizeTree();const observer=new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===Node.TEXT_NODE){const next=valueFor(node.data.trim());if(next)node.data=next}else if(node.nodeType===Node.ELEMENT_NODE)localizeTree(node)})));observer.observe(document.body,{childList:true,subtree:true})});
 window.applyFullLocale=localizeTree;
+window.JHGTranslate=translate;
 })();

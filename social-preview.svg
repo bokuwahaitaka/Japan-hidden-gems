@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Japan Hidden Gems</title>
+  <desc id="desc">Discover underrated Japanese music</desc>
+  <rect width="1200" height="630" fill="#171513"/>
+  <circle cx="1015" cy="135" r="96" fill="#e24b2d"/>
+  <path d="M0 500L1200 315v315H0z" fill="#272320"/>
+  <text x="86" y="230" fill="#fffdf9" font-family="Arial, sans-serif" font-size="38" font-weight="700" letter-spacing="8">JAPAN HIDDEN GEMS</text>
+  <text x="86" y="340" fill="#fffdf9" font-family="Georgia, serif" font-size="78">The J-pop the world missed.</text>
+  <text x="90" y="414" fill="#d9d1c7" font-family="Arial, sans-serif" font-size="30">Listen · Rate · Compare · Discover</text>
+</svg>

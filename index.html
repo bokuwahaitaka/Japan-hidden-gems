@@ -11,6 +11,7 @@
   <link rel="alternate" hreflang="ja" href="https://bokuwahaitaka.github.io/Japan-hidden-gems/?lang=ja" />
   <link rel="alternate" hreflang="ko" href="https://bokuwahaitaka.github.io/Japan-hidden-gems/?lang=ko" />
   <link rel="alternate" hreflang="zh" href="https://bokuwahaitaka.github.io/Japan-hidden-gems/?lang=zh" />
+  <link rel="alternate" hreflang="ru" href="https://bokuwahaitaka.github.io/Japan-hidden-gems/?lang=ru" />
   <link rel="alternate" hreflang="es" href="https://bokuwahaitaka.github.io/Japan-hidden-gems/?lang=es" />
   <link rel="alternate" hreflang="fr" href="https://bokuwahaitaka.github.io/Japan-hidden-gems/?lang=fr" />
   <link rel="alternate" hreflang="x-default" href="https://bokuwahaitaka.github.io/Japan-hidden-gems/?lang=en" />
@@ -22,8 +23,12 @@
   <meta property="og:title" content="Japan Hidden Gems — Discover Underrated J-pop Songs" />
   <meta property="og:description" content="Explore hidden Japanese songs, listener-powered rankings, and English J-pop discovery guides." />
   <meta property="og:url" content="https://bokuwahaitaka.github.io/Japan-hidden-gems/" />
+  <meta property="og:image" content="https://bokuwahaitaka.github.io/Japan-hidden-gems/social-preview.svg" />
+  <meta property="og:image:alt" content="Japan Hidden Gems — discover underrated Japanese music" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="stylesheet" href="styles.css?v=25" />
+  <meta name="twitter:image" content="https://bokuwahaitaka.github.io/Japan-hidden-gems/social-preview.svg" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css?v=26" />
   <link rel="stylesheet" href="growth.css?v=1" />
   <link rel="stylesheet" href="community.css?v=1" />
   <link rel="stylesheet" href="retention.css?v=1" />
@@ -49,7 +54,9 @@
         <button class="nav-item" type="button" data-route="genres"><span id="genresNavLabel">Genres</span></button>
         <button class="nav-item" type="button" data-route="personalized"><span id="personalizedNavLabel">For You</span></button>
         <button class="nav-item" type="button" data-route="swipe"><span id="v2DiscoverNavLabel">Discover</span></button>
-        <a class="nav-item nav-link-item" href="find-your-japan.html" style="text-decoration:none"><span>Find Your Japan</span></a>\n        <a class="nav-item nav-link-item" href="discover-japan.html" style="text-decoration:none"><span>Japan Stories</span></a>
+        <button id="requestNav" class="nav-item japan-only" type="button" data-route="request"><span id="requestNavLabel">Recommend</span></button>
+        <a class="nav-item nav-link-item" href="find-your-japan.html" style="text-decoration:none"><span>Find Your Japan</span></a>
+        <a class="nav-item nav-link-item" href="discover-japan.html" style="text-decoration:none"><span>Japan Stories</span></a>
         <button id="favoritesBtn" class="nav-item" type="button" data-route="favorites">My Hidden Gems</button>
         <label class="language-control" for="languageSelect">
           <span id="languageLabel">Language</span>
@@ -80,7 +87,7 @@
       <div id="v2Profile" class="v2-profile-shell"></div>
     </section>
     <section class="hero screen-panel is-active" data-screen="home">
-      <div id="homeMusicCanvas" class="home-music-canvas" aria-label="Featured music videos"></div>
+      <div id="homeMusicCanvas" class="home-music-canvas" role="region" aria-label="Featured music videos"></div>
       <div class="home-mv-scrim" aria-hidden="true"></div>
       <div class="shell hero-grid">
         <div>
@@ -91,6 +98,22 @@
       </div>
     </section>
 
+    <section id="audienceGate" class="shell section compact audience-section screen-panel is-active" data-screen="home" aria-labelledby="audienceTitle">
+      <div class="audience-card">
+        <p id="audienceEyebrow" class="eyebrow dark">CHOOSE YOUR ROLE</p>
+        <h2 id="audienceTitle">How are you listening?</h2>
+        <button id="japanListener" class="role-button" type="button">
+          <strong id="japanRoleTitle">I’m listening from Japan</strong>
+          <span id="japanRoleCopy">Recommend songs you think deserve more attention overseas.</span>
+        </button>
+        <button id="overseasListener" class="role-button" type="button">
+          <strong id="overseasRoleTitle">I’m listening from outside Japan</strong>
+          <span id="overseasRoleCopy">Discover J-pop you haven't heard yet. Tell us if you knew a song, then rate it after listening.</span>
+        </button>
+        <button id="changeAudienceBtn" class="text-button hidden" type="button">Change audience</button>
+      </div>
+    </section>
+
     <section class="stats screen-panel is-active" data-screen="home"><div class="shell stats-grid"><div><strong id="songCount">0</strong><span id="songCountLabel">songs</span></div><div><strong id="japanVoteCount">0</strong><span id="japanVoteLabel">ratings</span></div><div><strong id="overseasResponseCount">0</strong><span id="overseasResponseLabel">discovery checks</span></div></div></section>
     <section id="growthLoopHome" class="shell section growth-loop-home screen-panel is-active" data-screen="home">
       <div class="section-head growth-loop-head">
@@ -98,7 +121,7 @@
         <button id="openWeeklyMix" class="button" type="button">Open this week's gems</button>
       </div>
       <p id="growthLoopCopy" class="section-copy">A personal set refreshes every Monday. Listen, vote, save, and share what you discover.</p>
-      <div class="growth-loop-actions" aria-label="Discovery shortcuts">
+      <div class="growth-loop-actions" role="group" aria-label="Discovery shortcuts">
         <button type="button" data-growth-route="weekly-mix"><strong id="weeklyShortcutTitle">Weekly Hidden Gems</strong><span id="weeklyShortcutCopy">A new personal selection every Monday</span></button>
         <button type="button" data-growth-route="profile"><strong id="replayShortcutTitle">My JHG Replay</strong><span id="replayShortcutCopy">Turn your discoveries into a shareable recap</span></button>
         <button type="button" data-growth-route="retention"><strong id="blendShortcutTitle">JHG Blend</strong><span id="blendShortcutCopy">Compare taste and discover together</span></button>
@@ -147,6 +170,26 @@
       <div id="genreDirectoryGrid" class="genre-directory-grid" aria-live="polite"></div>
     </section>
 
+    <section id="requestSection" class="shell section screen-panel japan-only" data-screen="request" aria-labelledby="requestTitle">
+      <div class="section-head">
+        <div>
+          <p id="requestEyebrow" class="eyebrow dark">ADD A HIDDEN GEM</p>
+          <h2 id="requestTitle">Recommend a Japanese song.</h2>
+        </div>
+      </div>
+      <p id="requestCopy" class="section-copy">Search for an official YouTube music video, check the result, and add it to JHG.</p>
+      <form id="songRequestForm" class="song-request-form">
+        <label class="form-field" for="songSearchTitle">
+          <span id="songSearchLabel">Song title or artist</span>
+          <input id="songSearchTitle" class="text-input song-url-input" type="search" minlength="2" maxlength="100" autocomplete="off" required />
+        </label>
+        <button id="songSearchSubmit" class="button" type="submit">Search YouTube</button>
+      </form>
+      <p id="requestLimitCopy" class="privacy-note">Only official or authorized music videos should be selected. Existing video IDs are reused to avoid duplicate requests.</p>
+      <p id="songRequestNote" class="form-error" role="status" aria-live="polite"></p>
+      <div id="youtubeCandidates" class="youtube-candidates" aria-live="polite"></div>
+    </section>
+
     <section class="shell section screen-panel" id="ranking" data-screen="ranking">
       <div class="section-head"><div><p id="rankingEyebrow" class="eyebrow dark">DISCOVERY GAP RANKING</p><h2 id="rankingTitle">Hidden Gem Index</h2></div>
         <div class="ranking-controls">
@@ -185,7 +228,7 @@
 
   <dialog id="profileDialog" class="profile-dialog">
     <button id="closeProfileDialog" class="dialog-close" type="button" aria-label="Close">×</button><p id="profileEyebrow" class="eyebrow dark">ANONYMOUS LISTENER PROFILE</p><h2 id="profileTitle">Tell us about your listening</h2>
-    <form id="profileForm"><input id="profileGroup" type="hidden" /><label class="form-field"><span id="profileCountryLabel">Region</span><select id="profileCountry" class="select" required></select><small id="profileCountryHint">Choose the broad region where you live.</small></label><label class="form-field"><span id="profileAgeLabel">Age band</span><select id="profileAgeBand" class="select" required></select></label><fieldset class="genre-fieldset"><legend id="profileGenresLabel">Genres you enjoy</legend><p id="profileGenresHint" class="muted">Choose 1–5.</p><div id="profileGenres" class="genre-grid"></div></fieldset><p id="profilePrivacy" class="privacy-note">Saved to your anonymous survey profile. We do not ask for your name or exact age.</p><p id="profileError" class="form-error" aria-live="polite"></p><button id="profileSubmitButton" class="button profile-submit" type="submit">Save and continue</button></form>
+    <form id="profileForm"><input id="profileGroup" type="hidden" /><label class="form-field"><span id="profileCountryLabel">Region</span><select id="profileCountry" class="select" required><option value="">Loading regions…</option></select><small id="profileCountryHint">Choose the broad region where you live.</small></label><label class="form-field"><span id="profileAgeLabel">Age band</span><select id="profileAgeBand" class="select" required><option value="">Loading age bands…</option></select></label><fieldset class="genre-fieldset"><legend id="profileGenresLabel">Genres you enjoy</legend><p id="profileGenresHint" class="muted">Choose 1–5.</p><div id="profileGenres" class="genre-grid"></div></fieldset><p id="profilePrivacy" class="privacy-note">Saved to your anonymous survey profile. We do not ask for your name or exact age.</p><p id="profileError" class="form-error" aria-live="polite"></p><button id="profileSubmitButton" class="button profile-submit" type="submit">Save and continue</button></form>
   </dialog>
 
   <dialog id="authDialog" class="auth-dialog">
@@ -259,20 +302,20 @@
   <footer><div class="shell footer-inner"><div class="brand">JAPAN HIDDEN GEMS</div><p id="footerCopy">Early beta — no copyrighted audio or artwork is hosted here.</p><nav class="beta-footer-links" aria-label="Legal and support"><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="community-guidelines.html">Guidelines</a><a href="rights.html">Rights &amp; takedown</a><a href="changelog.html">Updates</a></nav></div></footer>
 
 <script src="jwt-retry.js?v=1"></script>
-<script src="app.js?v=31"></script>
-<script src="performance.js?v=4"></script>
-<script src="features.js?v=4"></script>
+<script src="app.js?v=32"></script>
+<script src="performance.js?v=5"></script>
+<script src="features.js?v=5"></script>
   <script src="experience.js?v=1"></script>
   <script src="growth.js?v=2"></script>
   <script src="community.js?v=2"></script>
   <script src="retention.js?v=2"></script>
   <script src="global.js?v=3"></script>
-  <script src="locale.js?v=1"></script>
+  <script src="locale.js?v=2"></script>
   <script src="club.js?v=1"></script>
   <script src="v2.js?v=2"></script>
   <script src="beta.js?v=1"></script>
   <script src="growth-loops.js?v=1"></script>
   <script src="blind-discovery.js?v=1"></script>
-  <script src="home-experience.js?v=1"></script>
+  <script src="home-experience.js?v=2"></script>
 </body>
 </html>

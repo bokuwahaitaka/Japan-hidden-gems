@@ -88,20 +88,35 @@ function performanceRatingSection(song) {
           </div>
         `}
 
-        <div class="rating-actions">
+        <div class="rating-actions" role="group" aria-label="${ui("Prior awareness", "視聴前の認知")}">
           <button
             class="action ${my?.heard_before === true ? "selected" : ""}"
+            type="button"
+            aria-pressed="${my?.heard_before === true}"
             onclick="window.submitRating(${song.id}, true, null)"
           >
-            ${my?.heard_before === true ? "Yes, I knew it ✓" : "Yes, I knew it"}
+            ${my?.heard_before === true ? `${ui("Yes, I knew it", "はい、知っていました")} ✓` : ui("Yes, I knew it", "はい、知っていました")}
+          </button>
+          <button
+            class="action ${my?.heard_before === false ? "selected" : ""}"
+            type="button"
+            aria-pressed="${my?.heard_before === false}"
+            onclick="document.getElementById('rating-${song.id}-1')?.focus()"
+          >
+            ${ui("No, this is my first listen", "いいえ、初めて聴きました")}
           </button>
         </div>
 
-        <h3>If not, how would you rate it after listening?</h3>
+        <h3 id="rating-${song.id}-label">${ui("First listen: how would you rate it?", "初めて聴いた評価を教えてください。")}</h3>
 
-        <div class="rating-actions">
+        <div class="rating-actions" role="radiogroup" aria-labelledby="rating-${song.id}-label">
           ${[1, 2, 3, 4, 5].map((value) => `
             <button
+              id="rating-${song.id}-${value}"
+              type="button"
+              role="radio"
+              aria-checked="${my?.heard_before === false && Number(my.rating) === value}"
+              aria-label="${ui(`${value} out of 5`, `5段階中${value}`)}"
               class="action ${my?.heard_before === false && Number(my.rating) === value ? "selected" : ""}"
               onclick="window.submitRating(${song.id}, false, ${value})"
             >

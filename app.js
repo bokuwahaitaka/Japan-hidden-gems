@@ -23,6 +23,7 @@ let personalizedRecommendations = [];
 let favoriteSongIds = new Set();
 let notInterestedSongIds = new Set();
 let songLocalizationMap = new Map();
+let catalogStaticCache = null;
 const SUPPORTED_INTERFACE_LANGUAGES = ["ja", "en", "ko", "zh", "ru", "es", "fr"];
 let interfaceLanguage = SUPPORTED_INTERFACE_LANGUAGES.includes(localStorage.getItem("jhg_interface_language_v1")) ? localStorage.getItem("jhg_interface_language_v1") : null;
 let currentView = "home";
@@ -83,7 +84,8 @@ function showStatus(
 
 
 function ui(en, ja) {
-  return interfaceLanguage === "ja" ? ja : en;
+  if (interfaceLanguage === "ja") return ja;
+  return window.JHGTranslate?.(en, interfaceLanguage) ?? en;
 }
 
 function asciiTitle(value) {
@@ -134,7 +136,7 @@ function setText(selector, value) {
   if (element) element.textContent = value;
 }
 
-const VALID_VIEWS = new Set(["home", "ranking", "genres", "personalized", "favorites", "listen", "detail", "discover", "artists", "playlists", "history", "weekly-mix"]);
+const VALID_VIEWS = new Set(["home", "ranking", "genres", "personalized", "favorites", "request", "listen", "detail", "discover", "artists", "playlists", "history", "weekly-mix"]);
 
 function routeFromLocation() {
   const requested = new URLSearchParams(window.location.search).get("view");
@@ -271,11 +273,11 @@ function applyInterfaceLanguage(language = interfaceLanguage || (audience === "j
     "#songTagFilterLabel": ["Song tag", "曲のタグ"],
     "#rankingCopy": ["GEMS combines listener rating with discovery gap: highly rated songs that fewer listeners knew rank higher.", "GEMSはリスナー評価と認知ギャップを組み合わせます。高評価で、事前に知っていた人が少ない曲ほど上位になります。"],
     "#requestEyebrow": ["ADD A HIDDEN GEM", "曲を追加"],
-    "#requestTitle": ["Add a song from its YouTube link.", "YouTubeリンクから曲を追加しよう。"],
-    "#requestCopy": ["Paste the official YouTube MV link for the song you want to add. The title and artist will be filled in automatically.", "追加したい曲のYouTube公式MVリンクを貼り付けてください。曲名とアーティスト名は自動で取得されます。"],
-    "#songSearchLabel": ["Official YouTube MV link", "YouTube公式MVリンク"],
-    "#songSearchSubmit": ["Add from link", "リンクから追加"],
-    "#requestLimitCopy": ["YouTube search is not used. Please paste the official MV link.", "YouTube検索は使用しません。公式MVのリンクを貼ってください。"],
+    "#requestTitle": ["Recommend a Japanese song.", "日本の曲を推薦しよう。"],
+    "#requestCopy": ["Search for an official YouTube music video, check the result, and add it to JHG.", "曲名やアーティスト名で公式YouTube MVを検索し、内容を確認してJHGに追加します。"],
+    "#songSearchLabel": ["Song title or artist", "曲名またはアーティスト名"],
+    "#songSearchSubmit": ["Search YouTube", "YouTubeで検索"],
+    "#requestLimitCopy": ["Only official or authorized music videos should be selected. Existing video IDs are reused to avoid duplicate requests.", "公式または権利者が公開したMVを選択してください。既存の動画IDは再利用し、重複登録を防ぎます。"],
     "#authEyebrow": ["ACCOUNT", "アカウント"],
     "#authTitle": ["Keep your hidden gems with you.", "お気に入りをどの端末でも。"],
     "#authCopy": ["Create an account to sync favorites across browsers and devices. You can keep using the site anonymously.", "アカウントを作ると、お気に入りをブラウザや端末間で同期できます。匿名のままでも利用できます。"],
@@ -725,7 +727,6 @@ async function reloadForCurrentUser() {
   favoriteSongIds = new Set();
   notInterestedSongIds = new Set();
   await loadListenerProfile();
-    setAudience("overseas", false);
   await loadDemographicOptions();
   await loadAll();
 }
@@ -990,6 +991,15 @@ async function rest(
   return data;
 }
 
+async function optionalRest(path, options = {}, fallback = []) {
+  try {
+    return await rest(path, options);
+  } catch (error) {
+    console.warn(`Optional data request failed: ${path}`, error);
+    return fallback;
+  }
+}
+
 
 /* =========================
    LISTENER PROFILE
@@ -1024,17 +1034,17 @@ const REGION_OPTIONS = {
 
 async function loadListenerProfile() {
   const [profiles, preferences, genres] = await Promise.all([
-    rest(
+    optionalRest(
       "listener_profiles?select=user_id,listener_group,country_code,age_band&user_id=eq." +
         encodeURIComponent(currentUser.id),
       { authenticated: true }
     ),
-    rest(
+    optionalRest(
       "listener_genre_preferences?select=genre_id&user_id=eq." +
         encodeURIComponent(currentUser.id),
       { authenticated: true }
     ),
-    rest(
+    optionalRest(
       "genres?select=id,slug,label_en&is_active=eq.true&order=sort_order.asc",
       { authenticated: true }
     )
@@ -1060,8 +1070,8 @@ function renderProfileForm(group) {
   $("#profileGroup").value = group;
   $("#profileTitle").textContent =
     group === "japan"
-      ? "日本のリスナー情報"
-      : "Tell us where you’re listening from";
+      ? ui("Listener profile in Japan", "日本のリスナー情報")
+      : ui("Tell us where you’re listening from", "どの地域から聴いているか教えてください");
 
   const availableRegions = Object.entries(REGION_OPTIONS)
     .filter(([code]) => group === "japan" ? code === "JP" : code !== "JP");
@@ -1090,7 +1100,7 @@ function renderProfileForm(group) {
   country.disabled = group === "japan";
 
   ageBand.innerHTML =
-    '<option value="">Choose an age band</option>' +
+    '<option value="">' + ui("Choose an age band", "年齢層を選択") + "</option>" +
     Object.entries(AGE_BANDS)
       .map(([value, label]) =>
         '<option value="' + escapeHtml(value) + '">' +
@@ -1144,50 +1154,26 @@ async function saveListenerProfile(event) {
   }
 
   if (!AGE_BANDS[ageBand]) {
-    error.textContent = "Choose an age band.";
+    error.textContent = ui("Choose an age band.", "年齢層を選択してください。");
     return;
   }
 
   if (genreIds.length < 1 || genreIds.length > 5) {
-    error.textContent = "Choose between 1 and 5 genres.";
+    error.textContent = ui("Choose between 1 and 5 genres.", "ジャンルを1〜5個選択してください。");
     return;
   }
 
   await withBusy(async () => {
     try {
-      await rest("listener_profiles?on_conflict=user_id", {
+      await rest("rpc/save_listener_profile", {
         method: "POST",
         authenticated: true,
-        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
         body: JSON.stringify({
-          user_id: currentUser.id,
-          listener_group: group,
-          country_code: countryCode,
-          age_band: ageBand,
-          updated_at: new Date().toISOString()
+          p_listener_group: group,
+          p_country_code: countryCode,
+          p_age_band: ageBand,
+          p_genre_ids: genreIds
         })
-      });
-
-      await rest(
-        "listener_genre_preferences?user_id=eq." +
-          encodeURIComponent(currentUser.id),
-        {
-          method: "DELETE",
-          authenticated: true,
-          headers: { Prefer: "return=minimal" }
-        }
-      );
-
-      await rest("listener_genre_preferences", {
-        method: "POST",
-        authenticated: true,
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify(
-          genreIds.map((genreId) => ({
-            user_id: currentUser.id,
-            genre_id: genreId
-          }))
-        )
       });
 
       listenerProfile = {
@@ -1199,10 +1185,10 @@ async function saveListenerProfile(event) {
       selectedGenreIds = genreIds;
       setAudience(group);
       $("#profileDialog").close();
-      showStatus("Your anonymous profile was saved.");
+      showStatus(ui("Your anonymous profile was saved.", "匿名プロフィールを保存しました。"));
     } catch (saveError) {
       console.error(saveError);
-      error.textContent = "Could not save your profile: " + saveError.message;
+      error.textContent = ui("Could not save your profile: ", "プロフィールを保存できませんでした：") + saveError.message;
     }
   });
 }
@@ -1215,7 +1201,7 @@ async function saveListenerProfile(event) {
 async function loadDemographicOptions() {
   const [demographics, tags, genres] =
     await Promise.all([
-      rest(
+      optionalRest(
         "rpc/get_demographic_filter_options",
         {
           method: "POST",
@@ -1223,7 +1209,7 @@ async function loadDemographicOptions() {
           body: JSON.stringify({})
         }
       ),
-      rest(
+      optionalRest(
         "rpc/get_song_filter_tags",
         {
           method: "POST",
@@ -1231,7 +1217,7 @@ async function loadDemographicOptions() {
           body: JSON.stringify({})
         }
       ),
-      rest(
+      optionalRest(
         "rpc/get_genre_directory",
         {
           method: "POST",
@@ -1381,6 +1367,51 @@ async function applyAgeFilter() {
    LOAD AGGREGATED DATA
 ========================= */
 
+async function loadRankingRows() {
+  try {
+    return await rest(
+      "rpc/get_hidden_gem_data_segment_v2",
+      {
+        method: "POST",
+        authenticated: true,
+        body: JSON.stringify({
+          p_country_code: selectedCountry,
+          p_age_band: selectedAgeBand,
+          p_tag_id: selectedSongTag
+        })
+      }
+    );
+  } catch (error) {
+    console.warn("Aggregated ranking is unavailable; showing the public catalog.", error);
+    return await rest(
+      "songs?select=id,title,artist,year,youtube_url&is_hidden=eq.false&order=id.asc",
+      { authenticated: true }
+    );
+  }
+}
+
+async function loadCatalogStaticData() {
+  if (catalogStaticCache) return catalogStaticCache;
+
+  const [titleRows, hiddenRows, tagRows] = await Promise.all([
+    optionalRest(
+      "songs?select=id,title_en,artist_en,youtube_url,youtube_video_id,youtube_thumbnail_url,youtube_channel_id,artist_image_url,media_enrichment_status",
+      { authenticated: true }
+    ),
+    optionalRest(
+      "rpc/get_hidden_song_ids",
+      { method: "POST", authenticated: true, body: JSON.stringify({}) }
+    ),
+    optionalRest(
+      "rpc/get_public_song_tags",
+      { method: "POST", authenticated: true, body: JSON.stringify({}) }
+    )
+  ]);
+
+  catalogStaticCache = { titleRows, hiddenRows, tagRows };
+  return catalogStaticCache;
+}
+
 async function loadAll() {
   if (!currentUser?.id) {
     throw new Error(
@@ -1391,51 +1422,18 @@ async function loadAll() {
   const [
     rows,
     discoveryScoreRows,
-    titleRows,
-    hiddenRows,
-    tagRows,
     personalizedRows,
     favoriteRows,
     feedbackRows,
-    localizationRows
+    localizationRows,
+    staticCatalogData
   ] = await Promise.all([
-      rest(
-        "rpc/get_hidden_gem_data_segment_v2",
-        {
-          method: "POST",
-          authenticated: true,
-          body: JSON.stringify({
-            p_country_code: selectedCountry,
-            p_age_band: selectedAgeBand,
-            p_tag_id: selectedSongTag
-          })
-        }
-      ),
-      rest(
+      loadRankingRows(),
+      optionalRest(
         "rpc/get_discovery_scoreboard",
         { method: "POST", authenticated: true, body: JSON.stringify({}) }
-      ).catch(() => []),
-      rest(
-        "songs?select=id,title_en,artist_en,youtube_url,youtube_video_id,youtube_thumbnail_url,youtube_channel_id,artist_image_url,media_enrichment_status",
-        { authenticated: true }
       ),
-      rest(
-        "rpc/get_hidden_song_ids",
-        {
-          method: "POST",
-          authenticated: true,
-          body: JSON.stringify({})
-        }
-      ),
-      rest(
-        "rpc/get_public_song_tags",
-        {
-          method: "POST",
-          authenticated: true,
-          body: JSON.stringify({})
-        }
-      ),
-      rest(
+      optionalRest(
         "rpc/get_personalized_recommendations",
         {
           method: "POST",
@@ -1443,23 +1441,26 @@ async function loadAll() {
           body: JSON.stringify({ p_limit: 5 })
         }
       ),
-      rest(
+      optionalRest(
         "favorite_songs?select=song_id,created_at&user_id=eq." +
           encodeURIComponent(currentUser.id) +
           "&order=created_at.desc",
         { authenticated: true }
       ),
-      rest(
+      optionalRest(
         "personalization_feedback?select=song_id&user_id=eq." +
           encodeURIComponent(currentUser.id) +
           "&feedback=eq.not_interested",
         { authenticated: true }
       ),
-      rest(
+      optionalRest(
         `song_localizations?select=song_id,locale,localized_title,localized_artist&locale=eq.${encodeURIComponent(interfaceLanguage === "ja" ? "en" : interfaceLanguage)}`,
         { authenticated: true }
-      )
+      ),
+      loadCatalogStaticData()
     ]);
+
+  const { titleRows, hiddenRows, tagRows } = staticCatalogData;
 
   songLocalizationMap = new Map(
     (localizationRows ?? []).map((row) => [`${Number(row.song_id)}:${row.locale}`, row])
@@ -2430,9 +2431,11 @@ function renderRatingSections(
                   `
               }
 
-              <div class="rating-actions">
+              <div class="rating-actions" role="group" aria-label="${ui("Prior awareness", "視聴前の認知")}">
 
                 <button
+                  type="button"
+                  aria-pressed="${my?.heard_before === true}"
                   class="action ${
                     my?.heard_before === true
                       ? "selected"
@@ -2447,19 +2450,33 @@ function renderRatingSections(
                   }
                 </button>
 
+                <button
+                  type="button"
+                  aria-pressed="${my?.heard_before === false}"
+                  class="action ${my?.heard_before === false ? "selected" : ""}"
+                  onclick="document.getElementById('rating-${song.id}-1')?.focus()"
+                >
+                  ${ui("No, this is my first listen", "いいえ、初めて聴きました")}
+                </button>
+
               </div>
 
-              <h3>
-                ${ui("If not, how would you rate it after listening?", "知らなかった場合、聴いた後の評価を教えてください。")}
+              <h3 id="rating-${song.id}-label">
+                ${ui("First listen: how would you rate it?", "初めて聴いた評価を教えてください。")}
               </h3>
 
-              <div class="rating-actions">
+              <div class="rating-actions" role="radiogroup" aria-labelledby="rating-${song.id}-label">
 
                 ${
                   [1, 2, 3, 4, 5]
                     .map(
                       (value) => `
                         <button
+                          id="rating-${song.id}-${value}"
+                          type="button"
+                          role="radio"
+                          aria-checked="${my?.heard_before === false && Number(my.rating) === value}"
+                          aria-label="${ui(`${value} out of 5`, `5段階中${value}`)}"
                           class="action ${
                             my?.heard_before === false &&
                             Number(
@@ -2651,6 +2668,7 @@ async function addYoutubeCandidate(button) {
 
     $("#songSearchTitle").value = "";
     $("#youtubeCandidates").innerHTML = "";
+    catalogStaticCache = null;
     showStatus(
       taggingFailed
         ? "曲を追加しました。AIタグ付けは後で再試行できます。"
@@ -2744,7 +2762,8 @@ async function submitRecommendation(
   recommended
 ) {
   if (
-    audience !== "japan"
+    audience !== "japan" ||
+    listenerProfile?.listener_group !== "japan"
   ) {
     showStatus(
       "Choose the Japan listener option first.",
@@ -2857,7 +2876,8 @@ async function submitRating(
   rating
 ) {
   if (
-    audience !== "overseas"
+    audience !== "overseas" ||
+    listenerProfile?.listener_group !== "overseas"
   ) {
     showStatus(
       "Choose the outside-Japan listener option first.",
@@ -2978,14 +2998,18 @@ function setAudience(
   type,
   scroll = true
 ) {
-  type = "overseas";
+  if (!["japan", "overseas"].includes(type)) {
+    console.warn("Unknown audience type:", type);
+    return;
+  }
+
   audience = type;
 
   document.body.dataset.audience =
     type;
 
   if (!localStorage.getItem(LANGUAGE_KEY)) {
-    applyInterfaceLanguage("en");
+    applyInterfaceLanguage(type === "japan" ? "ja" : "en");
   } else {
     applyInterfaceLanguage(interfaceLanguage);
   }
@@ -3008,8 +3032,8 @@ function setAudience(
     );
 
   if (scroll) {
-    navigateTo("ranking");
-  } else if (currentView === "japan-beta") {
+    navigateTo(type === "japan" ? "request" : "ranking");
+  } else if (type === "overseas" && currentView === "request") {
     navigateTo("ranking", { replace: true });
   }
 }
@@ -3061,7 +3085,7 @@ function wireUi() {
   $("#changeAudienceBtn")
     ?.addEventListener(
       "click",
-      () => openProfileDialog()
+      resetAudience
     );
 
   $("#languageSelect")
