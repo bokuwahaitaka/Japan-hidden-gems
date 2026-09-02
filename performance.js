@@ -132,14 +132,19 @@ function performanceRatingSection(song) {
 }
 
 renderRatingSections = function () {
-  if (currentView === "listen" && activeRatingSongId) {
-    const activeSong = songs.find((song) => Number(song.id) === Number(activeRatingSongId));
-    ratingSections.innerHTML = activeSong ? performanceRatingSection(activeSong) : "";
-    syncListenView();
-  } else {
-    ratingSections.innerHTML = "";
-  }
+  ratingSections.innerHTML = "";
 };
+
+function restorePerformanceRating(songId) {
+  const numericSongId = Number(songId);
+  const song = songs.find((item) => Number(item.id) === numericSongId);
+  if (!song) return false;
+
+  activeRatingSongId = numericSongId;
+  ratingSections.innerHTML = performanceRatingSection(song);
+  syncListenView();
+  return true;
+}
 
 render = function () {
   const sortedSongs = performanceSortedSongs();
@@ -169,14 +174,14 @@ render = function () {
     });
   }
 
-  ratingSections.innerHTML = "";
+  const routeSongId = routeFromLocation() === "listen" ? songFromLocation() : null;
+  if (!routeSongId || !restorePerformanceRating(routeSongId)) {
+    ratingSections.innerHTML = "";
+  }
 };
 
 openRating = function (songId) {
-  const song = songs.find((item) => item.id === songId);
-  if (!song) return;
-
-  ratingSections.innerHTML = performanceRatingSection(song);
+  if (!restorePerformanceRating(songId)) return;
   navigateTo("listen", { songId });
 };
 
