@@ -14,6 +14,7 @@ for (const file of readdirSync(root).filter((name) => name.endsWith(".js"))) {
 
 const index = read("index.html");
 const app = read("app.js");
+const performance = read("performance.js");
 const ids = [...index.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const duplicateIds = [...new Set(ids.filter((id, position) => ids.indexOf(id) !== position))];
 check(duplicateIds.length === 0, `index.html: duplicate IDs: ${duplicateIds.join(", ")}`);
@@ -27,6 +28,10 @@ for (const id of ["songRequestForm", "songSearchTitle", "japanListener", "overse
 check(!/type\s*=\s*["']overseas["']/.test(app), "app.js: forced overseas audience assignment returned");
 check(app.includes('"request"'), "app.js: request route is not registered");
 check(app.includes('rpc/save_listener_profile'), "app.js: profile save is not atomic");
+check(
+  performance.includes('currentView === "listen" && activeRatingSongId'),
+  "performance.js: active rating view is not preserved during catalog refresh"
+);
 
 const localAssets = [...index.matchAll(/(?:src|href)="([^"?#]+)(?:[?#][^"]*)?"/g)]
   .map((match) => match[1])

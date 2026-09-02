@@ -132,7 +132,13 @@ function performanceRatingSection(song) {
 }
 
 renderRatingSections = function () {
-  ratingSections.innerHTML = "";
+  if (currentView === "listen" && activeRatingSongId) {
+    const activeSong = songs.find((song) => Number(song.id) === Number(activeRatingSongId));
+    ratingSections.innerHTML = activeSong ? performanceRatingSection(activeSong) : "";
+    syncListenView();
+  } else {
+    ratingSections.innerHTML = "";
+  }
 };
 
 render = function () {
