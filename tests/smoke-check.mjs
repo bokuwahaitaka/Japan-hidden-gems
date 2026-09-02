@@ -29,6 +29,18 @@ check(!/type\s*=\s*["']overseas["']/.test(app), "app.js: forced overseas audienc
 check(app.includes('"request"'), "app.js: request route is not registered");
 check(app.includes('rpc/save_listener_profile'), "app.js: profile save is not atomic");
 check(
+  app.indexOf("requestedInterfaceLanguage") < app.indexOf("storedInterfaceLanguage"),
+  "app.js: explicit ?lang= must take precedence over stored language"
+);
+check(
+  /<form method="dialog" class="dialog-close-form">[\s\S]*?id="closeAuthDialog"/.test(index),
+  "index.html: account dialog close control needs a native dialog fallback"
+);
+check(
+  !/<h2>Have you heard this song before\?<\/h2>/.test(performance),
+  "performance.js: rating UI bypasses localization"
+);
+check(
   performance.includes('routeFromLocation() === "listen" ? songFromLocation() : null'),
   "performance.js: active rating view is not preserved during catalog refresh"
 );

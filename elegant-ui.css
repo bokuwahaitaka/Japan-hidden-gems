@@ -205,6 +205,46 @@ dialog{
   background:linear-gradient(145deg,#fffefa,#f7f0e6);
   box-shadow:0 12px 0 rgba(35,24,15,.10),0 40px 100px rgba(28,19,12,.30);
 }
+.dialog-close-form{display:contents}
+
+/* Keep every desktop navigation target reachable without allowing page overflow. */
+@media(min-width:721px){
+  .header-inner{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    grid-template-rows:auto auto!important;
+    gap:10px 16px!important;
+    padding-block:10px!important;
+  }
+  .header-inner>.brand{
+    grid-column:1!important;
+    grid-row:1!important;
+    justify-self:start!important;
+    min-width:0!important;
+  }
+  .header-actions{
+    grid-column:2!important;
+    grid-row:1!important;
+    justify-self:end!important;
+    position:relative;
+    z-index:2;
+  }
+  .primary-nav{
+    grid-column:1/-1!important;
+    grid-row:2!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    justify-content:flex-start!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    overscroll-behavior-inline:contain;
+    scrollbar-width:none;
+    scroll-snap-type:x proximity;
+  }
+  .primary-nav::-webkit-scrollbar{display:none}
+  .primary-nav>*{flex:0 0 auto;scroll-snap-align:start}
+}
 .dialog-close,.home-spotlight-close,.mobile-menu-toggle{
   display:grid;place-items:center;
   border:1px solid rgba(55,40,28,.22)!important;

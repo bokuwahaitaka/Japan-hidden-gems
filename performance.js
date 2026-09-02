@@ -69,8 +69,8 @@ function performanceRatingSection(song) {
   return `
     <section class="rating-section" data-song-id="${song.id}">
       <div class="rating-inner">
-        <p class="eyebrow dark">RATE ${escapeHtml(songTitle(song))}</p>
-        <h2>Have you heard this song before?</h2>
+        <p class="eyebrow dark">${ui("RATE", "評価")} ${escapeHtml(songTitle(song))}</p>
+        <h2>${ui("Have you heard this song before?", "この曲を以前から知っていましたか？")}</h2>
 
         ${embed ? `
           <div class="preview">
@@ -84,7 +84,7 @@ function performanceRatingSection(song) {
           </div>
         ` : `
           <div class="no-preview">
-            A listening preview has not been added for this song yet.
+            ${ui("A listening preview has not been added for this song yet.", "この曲にはまだ試聴動画が登録されていません。")}
           </div>
         `}
 
@@ -125,7 +125,7 @@ function performanceRatingSection(song) {
           `).join("")}
         </div>
 
-        ${my ? '<p class="sample-note">Choosing again updates your previous response.</p>' : ""}
+        ${my ? `<p class="sample-note">${ui("Choosing again updates your previous response.", "もう一度選ぶと以前の回答が更新されます。")}</p>` : ""}
       </div>
     </section>
   `;

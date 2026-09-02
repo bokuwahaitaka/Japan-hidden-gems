@@ -78,7 +78,24 @@ const D={
 "4 out of 5":{ja:"5段階中4",ko:"5점 만점에 4점",zh:"5 分中的 4 分",ru:"4 из 5",es:"4 de 5",fr:"4 sur 5"},
 "5 out of 5":{ja:"5段階中5",ko:"5점 만점에 5점",zh:"5 分中的 5 分",ru:"5 из 5",es:"5 de 5",fr:"5 sur 5"},
 "Save and continue":{ja:"保存して続ける",ko:"저장하고 계속",zh:"保存并继续",ru:"Сохранить и продолжить",es:"Guardar y continuar",fr:"Enregistrer et continuer"},
-"Could not load the site.":{ja:"サイトを読み込めませんでした。",ko:"사이트를 불러올 수 없습니다.",zh:"无法加载网站。",ru:"Не удалось загрузить сайт.",es:"No se pudo cargar el sitio.",fr:"Impossible de charger le site."}
+"Could not load the site.":{ja:"サイトを読み込めませんでした。",ko:"사이트를 불러올 수 없습니다.",zh:"无法加载网站。",ru:"Не удалось загрузить сайт.",es:"No se pudo cargar el sitio.",fr:"Impossible de charger le site."},
+"Under 18":{ja:"18歳未満",ko:"18세 미만",zh:"18岁以下",ru:"Младше 18",es:"Menos de 18",fr:"Moins de 18 ans"},
+"65+":{ja:"65歳以上",ko:"65세 이상",zh:"65岁以上",ru:"65+",es:"65+",fr:"65 ans et plus"},
+"Prefer not to say":{ja:"回答しない",ko:"응답하지 않음",zh:"不愿透露",ru:"Предпочитаю не отвечать",es:"Prefiero no decirlo",fr:"Je préfère ne pas répondre"},
+"RATE":{ja:"評価",ko:"평가",zh:"评分",ru:"ОЦЕНКА",es:"VALORAR",fr:"NOTER"},
+"Have you heard this song before?":{ja:"この曲を以前から知っていましたか？",ko:"이 노래를 전에 들어본 적이 있나요?",zh:"你以前听过这首歌吗？",ru:"Вы слышали эту песню раньше?",es:"¿Habías escuchado esta canción?",fr:"Aviez-vous déjà entendu ce titre ?"},
+"A listening preview has not been added for this song yet.":{ja:"この曲にはまだ試聴動画が登録されていません。",ko:"이 노래에는 아직 미리듣기가 없습니다.",zh:"这首歌尚未添加试听。",ru:"Для этой песни пока нет предпрослушивания.",es:"Esta canción aún no tiene una vista previa.",fr:"Aucun aperçu n’est encore disponible pour ce titre."},
+"Choosing again updates your previous response.":{ja:"もう一度選ぶと以前の回答が更新されます。",ko:"다시 선택하면 이전 응답이 업데이트됩니다.",zh:"重新选择会更新之前的回答。",ru:"Повторный выбор обновит предыдущий ответ.",es:"Elegir de nuevo actualiza tu respuesta anterior.",fr:"Un nouveau choix met à jour votre réponse précédente."},
+"Your response was saved.":{ja:"回答を保存しました。",ko:"응답을 저장했습니다.",zh:"已保存你的回答。",ru:"Ответ сохранён.",es:"Tu respuesta se guardó.",fr:"Votre réponse a été enregistrée."},
+"Could not save response":{ja:"回答を保存できませんでした",ko:"응답을 저장할 수 없습니다",zh:"无法保存回答",ru:"Не удалось сохранить ответ",es:"No se pudo guardar la respuesta",fr:"Impossible d’enregistrer la réponse"},
+"Weekly Hidden Gems":{ja:"週間 Hidden Gems",ko:"주간 Hidden Gems",zh:"每周 Hidden Gems",ru:"Еженедельные Hidden Gems",es:"Hidden Gems semanales",fr:"Hidden Gems de la semaine"},
+"Community champions":{ja:"みんなの優勝曲",ko:"커뮤니티 우승곡",zh:"社区冠军曲目",ru:"Победители сообщества",es:"Campeonas de la comunidad",fr:"Vainqueurs de la communauté"},
+"Save champion":{ja:"優勝曲を保存",ko:"우승곡 저장",zh:"保存冠军曲目",ru:"Сохранить победителя",es:"Guardar campeona",fr:"Enregistrer le vainqueur"},
+"Decade":{ja:"年代",ko:"연대",zh:"年代",ru:"Десятилетие",es:"Década",fr:"Décennie"},
+"Artist":{ja:"アーティスト",ko:"아티스트",zh:"艺人",ru:"Исполнитель",es:"Artista",fr:"Artiste"},
+"wins":{ja:"勝",ko:"승",zh:"胜",ru:"побед",es:"victorias",fr:"victoires"},
+"No completed Cups yet.":{ja:"完了したJ-POP杯はまだありません。",ko:"완료된 컵이 아직 없습니다.",zh:"尚无已完成的杯赛。",ru:"Завершённых турниров пока нет.",es:"Aún no hay Copas completadas.",fr:"Aucune Coupe terminée pour le moment."},
+"REFERENCE BASELINE — These provisional scores are simulated starter data, not real listener responses. They can be removed by the administrator at any time.":{ja:"参考基準 — この暫定スコアは開始用のシミュレーションデータで、実際のリスナー回答ではありません。管理者はいつでも削除できます。",ko:"참고 기준 — 이 임시 점수는 시작용 시뮬레이션 데이터이며 실제 청취자 응답이 아닙니다. 관리자가 언제든 삭제할 수 있습니다.",zh:"参考基线 — 这些暂定分数是用于启动的模拟数据，并非真实听众回答。管理员可随时删除。",ru:"СПРАВОЧНАЯ БАЗА — Эти предварительные оценки смоделированы и не являются ответами реальных слушателей. Администратор может удалить их в любое время.",es:"BASE DE REFERENCIA — Estas puntuaciones provisionales son datos iniciales simulados, no respuestas reales. El administrador puede eliminarlas en cualquier momento.",fr:"BASE DE RÉFÉRENCE — Ces scores provisoires sont des données initiales simulées, pas de vraies réponses. L’administrateur peut les supprimer à tout moment."}
 };
 const reverse=new Map();
 Object.entries(D).forEach(([en,values])=>{reverse.set(en,en);Object.values(values).forEach(value=>reverse.set(value,en))});

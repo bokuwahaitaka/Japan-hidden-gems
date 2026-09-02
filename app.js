@@ -25,7 +25,14 @@ let notInterestedSongIds = new Set();
 let songLocalizationMap = new Map();
 let catalogStaticCache = null;
 const SUPPORTED_INTERFACE_LANGUAGES = ["ja", "en", "ko", "zh", "ru", "es", "fr"];
-let interfaceLanguage = SUPPORTED_INTERFACE_LANGUAGES.includes(localStorage.getItem("jhg_interface_language_v1")) ? localStorage.getItem("jhg_interface_language_v1") : null;
+const LANGUAGE_KEY = "jhg_interface_language_v1";
+const requestedInterfaceLanguage = new URLSearchParams(window.location.search).get("lang");
+const storedInterfaceLanguage = localStorage.getItem(LANGUAGE_KEY);
+let interfaceLanguage = SUPPORTED_INTERFACE_LANGUAGES.includes(requestedInterfaceLanguage)
+  ? requestedInterfaceLanguage
+  : SUPPORTED_INTERFACE_LANGUAGES.includes(storedInterfaceLanguage)
+    ? storedInterfaceLanguage
+    : null;
 let currentView = "home";
 let activeRatingSongId = null;
 
@@ -47,7 +54,6 @@ const SESSION_KEY = "jhg_supabase_session_v1";
 const PENDING_ACCOUNT_KEY = "jhg_pending_account_email_v1";
 const PENDING_PASSWORD_KEY = "jhg_pending_account_password_v1";
 const PENDING_RESET_KEY = "jhg_pending_password_reset_v1";
-const LANGUAGE_KEY = "jhg_interface_language_v1";
 
 /* =========================
    GENERAL
@@ -1006,14 +1012,14 @@ async function optionalRest(path, options = {}, fallback = []) {
 ========================= */
 
 const AGE_BANDS = {
-  under_18: "Under 18",
-  "18_24": "18–24",
-  "25_34": "25–34",
-  "35_44": "35–44",
-  "45_54": "45–54",
-  "55_64": "55–64",
-  "65_plus": "65+",
-  prefer_not_to_say: "Prefer not to say"
+  under_18: { en: "Under 18", ja: "18歳未満" },
+  "18_24": { en: "18–24", ja: "18–24" },
+  "25_34": { en: "25–34", ja: "25–34" },
+  "35_44": { en: "35–44", ja: "35–44" },
+  "45_54": { en: "45–54", ja: "45–54" },
+  "55_64": { en: "55–64", ja: "55–64" },
+  "65_plus": { en: "65+", ja: "65歳以上" },
+  prefer_not_to_say: { en: "Prefer not to say", ja: "回答しない" }
 };
 
 const REGION_OPTIONS = {
@@ -1104,7 +1110,7 @@ function renderProfileForm(group) {
     Object.entries(AGE_BANDS)
       .map(([value, label]) =>
         '<option value="' + escapeHtml(value) + '">' +
-        escapeHtml(label) + "</option>"
+        escapeHtml(ui(label.en, label.ja)) + "</option>"
       )
       .join("");
 
@@ -2968,7 +2974,7 @@ async function submitRating(
         }
 
         showStatus(
-          "Your response was saved."
+          ui("Your response was saved.", "回答を保存しました。")
         );
 
         await loadAll();
@@ -2978,7 +2984,7 @@ async function submitRating(
         console.error(error);
 
         showStatus(
-          `Could not save response: ${error.message}`,
+          `${ui("Could not save response", "回答を保存できませんでした")}: ${error.message}`,
           "error"
         );
       }
