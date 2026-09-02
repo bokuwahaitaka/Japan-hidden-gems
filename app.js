@@ -2972,6 +2972,11 @@ async function submitRating(
         );
 
         await loadAll();
+        // loadAll() refreshes and re-renders the ranking catalog. The
+        // performance renderer clears the listen container as part of that
+        // refresh, so restore the active song instead of leaving a blank
+        // listen view after a successful response.
+        openRating(songId);
       }
 
       catch (error) {
