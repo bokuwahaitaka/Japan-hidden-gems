@@ -42,6 +42,16 @@
     if (requestedView() === "request") document.body.dataset.audience = "japan";
   }
 
+  // This script is loaded after the DOM and before app.js, so direct-route state
+  // can be established before the main router performs its first render.
+  forceRequestAudience();
+  if (requestedView() === "listen") {
+    const loading = document.getElementById("ratingSections");
+    if (loading && !loading.textContent.trim()) {
+      loading.innerHTML = '<p class="muted" role="status" aria-live="polite">Loading song…</p>';
+    }
+  }
+
   function applyProfileCopy() {
     const lang = document.documentElement.dataset.language || document.documentElement.lang?.split("-")[0] || "en";
     const values = profileCopy[lang];
