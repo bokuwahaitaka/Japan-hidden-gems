@@ -60,19 +60,21 @@
     ids.forEach((id, index) => { const node = document.getElementById(id); if (node) node.textContent = values[index]; });
   }
 
-  function openProfileForDiscover() {
-    const dialog = document.getElementById("profileDialog");
-    if (!dialog) return false;
-    sessionStorage.setItem("jhg_pending_discover_profile", "1");
-    if (typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
-    return true;
+  function openCanonicalProfile(group, pendingKey) {
+    if (pendingKey) sessionStorage.setItem(pendingKey, "1");
+    if (typeof openProfileDialog === "function") {
+      openProfileDialog(group);
+      setTimeout(applyProfileCopy, 0);
+      return true;
+    }
+    return false;
   }
 
   function needsDiscoverProfile() {
     try {
-      return typeof audience !== "undefined" && audience === "overseas" && typeof listenerProfile !== "undefined" && !listenerProfile;
+      return typeof listenerProfile !== "undefined" && listenerProfile?.listener_group !== "overseas";
     } catch {
-      return false;
+      return true;
     }
   }
 
@@ -81,8 +83,20 @@
     if (discover && needsDiscoverProfile()) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      openProfileForDiscover();
+      openCanonicalProfile("overseas", "jhg_pending_discover_profile");
       return;
+    }
+
+    const request = event.target.closest?.('[data-route="request"]');
+    if (request) {
+      let hasJapanProfile = false;
+      try { hasJapanProfile = listenerProfile?.listener_group === "japan"; } catch {}
+      if (!hasJapanProfile) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        openCanonicalProfile("japan", "jhg_pending_request_profile");
+        return;
+      }
     }
 
     const blend = event.target.closest?.('[data-growth-route="retention"]');
@@ -109,22 +123,57 @@
 
     document.getElementById("languageSelect")?.addEventListener("change", () => setTimeout(applyProfileCopy, 0));
     document.getElementById("profileForm")?.addEventListener("submit", () => {
-      if (sessionStorage.getItem("jhg_pending_discover_profile") !== "1") return;
+      const pendingDiscover = sessionStorage.getItem("jhg_pending_discover_profile") === "1";
+      const pendingRequest = sessionStorage.getItem("jhg_pending_request_profile") === "1";
+      if (!pendingDiscover && !pendingRequest) return;
+
       let attempts = 0;
       const timer = setInterval(() => {
         attempts += 1;
-        let ready = false;
-        try { ready = typeof listenerProfile !== "undefined" && Boolean(listenerProfile); } catch {}
+        let group = null;
+        try { group = listenerProfile?.listener_group || null; } catch {}
+        const ready = pendingDiscover ? group === "overseas" : group === "japan";
         if (ready || attempts >= 40) {
           clearInterval(timer);
           if (ready) {
-            sessionStorage.removeItem("jhg_pending_discover_profile");
-            if (typeof navigateTo === "function") navigateTo("swipe");
+            if (pendingDiscover) {
+              sessionStorage.removeItem("jhg_pending_discover_profile");
+              if (typeof navigateTo === "function") navigateTo("swipe");
+            }
+            if (pendingRequest) {
+              sessionStorage.removeItem("jhg_pending_request_profile");
+              if (typeof navigateTo === "function") navigateTo("request");
+            }
           }
         }
       }, 250);
     });
 
-    if (requestedView() === "swipe" && needsDiscoverProfile()) openProfileForDiscover();
+    // Direct URLs bypass click guards. Wait until the anonymous/member session and
+    // genre data are ready, then route through the same canonical profile flow.
+    let directChecks = 0;
+    const directGuard = setInterval(() => {
+      directChecks += 1;
+      let userReady = false;
+      let genresReady = false;
+      let group = null;
+      try {
+        userReady = Boolean(currentUser?.id);
+        genresReady = Array.isArray(genreOptions) && genreOptions.length > 0;
+        group = listenerProfile?.listener_group || null;
+      } catch {}
+
+      if (userReady && genresReady) {
+        const view = requestedView();
+        if (view === "request" && group !== "japan") {
+          openCanonicalProfile("japan", "jhg_pending_request_profile");
+        } else if (view === "swipe" && group !== "overseas") {
+          openCanonicalProfile("overseas", "jhg_pending_discover_profile");
+        }
+        clearInterval(directGuard);
+      } else if (directChecks >= 80) {
+        clearInterval(directGuard);
+      }
+    }, 250);
   });
 })();
