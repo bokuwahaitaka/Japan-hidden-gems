@@ -341,9 +341,15 @@
     const root=document.querySelector("#v2Profile");if(!root)return;root.innerHTML="<p>Loading…</p>";
     if(!state.catalog.length)await loadCatalog();
     const filter=handle?`handle=eq.${encodeURIComponent(handle)}`:`user_id=eq.${uid()}`;
-    let profiles=await rest(`public_profiles?select=*&${filter}&limit=1`,{authenticated:true});
-    if(!profiles[0]&&!handle)profiles=[await ensurePublicProfile()];
-    const profile=profiles[0];if(!profile){root.innerHTML="<p>Profile not found.</p>";return;}state.profile=profile;
+    const profiles=await rest(`public_profiles?select=*&${filter}&limit=1`,{authenticated:true});
+    const profile=profiles[0];
+    if(!profile){
+      root.innerHTML = handle
+        ? "<p>Profile not found.</p>"
+        : '<div class="v2-empty"><p>Your public JHG profile has not been created yet.</p><button class="button" type="button" data-v2-create-profile>Create public profile</button></div>';
+      return;
+    }
+    state.profile=profile;
     const own=profile.user_id===uid();
     const [discoveries,likes,saves,comments]=own?await Promise.all([
       rest(`song_discoveries?select=song_id,first_discovered_at&user_id=eq.${uid()}&order=first_discovered_at.desc`,{authenticated:true}),
@@ -375,7 +381,18 @@
 
   async function enterSwipe() {
     await waitForAuthenticatedUser();
+    if(listenerProfile?.listener_group !== "overseas") {
+      stopAllPlayers();
+      state.activeId = null;
+      const root = document.querySelector("#v2SwipeFeed");
+      if(root) root.innerHTML = '<div class="v2-empty"><p>Set up your outside-Japan listener profile to start Discover.</p></div>';
+      if(typeof openProfileDialog === "function" && !document.querySelector("#profileDialog")?.open) {
+        openProfileDialog("overseas");
+      }
+      return false;
+    }
     if(!state.catalog.length){await loadCatalog();await loadOwnStates();renderFeed();}
+    return true;
   }
 
   function wire() {
@@ -392,6 +409,7 @@
       const reply=e.target.closest("[data-v2-reply]");if(reply){state.replyTo=reply.dataset.v2Reply;document.querySelector("#v2CommentForm input").focus();}
       const like=e.target.closest("[data-v2-comment-like]");if(like)await toggleCommentLike(like.dataset.v2CommentLike,like);
       const profile=e.target.closest("[data-v2-profile]");if(profile)goProfile(profile.dataset.v2Profile);
+      const createProfile=e.target.closest("[data-v2-create-profile]");if(createProfile){createProfile.disabled=true;try{await ensurePublicProfile();await renderProfile();}catch(err){showStatus(err.message,"error");createProfile.disabled=false;}}
       const tab=e.target.closest("[data-v2-profile-tab]");if(tab)renderProfileTab(tab.dataset.v2ProfileTab);
       const song=e.target.closest("[data-v2-song]");if(song)openSongDetail(Number(song.dataset.v2Song));
     });
