@@ -18,6 +18,8 @@ const performance = read("performance.js");
 const elegantUi = read("elegant-ui.css");
 const v2 = read("v2.js");
 const v2Css = read("v2.css");
+const retention = read("retention.js");
+const routeGuard = read("jwt-retry.js");
 const ids = [...index.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const duplicateIds = [...new Set(ids.filter((id, position) => ids.indexOf(id) !== position))];
 check(duplicateIds.length === 0, `index.html: duplicate IDs: ${duplicateIds.join(", ")}`);
@@ -68,6 +70,38 @@ check(v2.includes("await waitForAuthenticatedUser()"), "v2.js: direct Discover l
 check(!v2.includes("scrollIntoView"), "v2.js: swipe-based song navigation returned");
 check(!v2Css.includes("scroll-snap-type"), "v2.css: swipe snapping returned");
 check(!/playerState===0\)advanceToNext/.test(v2), "v2.js: media ending must not advance automatically");
+check(
+  v2.indexOf('listenerProfile?.listener_group !== "overseas"') < v2.indexOf('if(!state.catalog.length){await loadCatalog()'),
+  "v2.js: Discover must require an overseas profile before loading the catalog"
+);
+check(
+  v2.includes('typeof genreOptions === "undefined"') && v2.includes("prerequisitesStarted"),
+  "v2.js: direct Discover must wait for profile prerequisites before opening the profile flow"
+);
+check(
+  !v2.includes('if(!profiles[0]&&!handle)profiles=[await ensurePublicProfile()]'),
+  "v2.js: opening your profile must not auto-create a public profile"
+);
+check(
+  v2.includes("data-v2-create-profile") && v2.includes("await ensurePublicProfile();await renderProfile();"),
+  "v2.js: public profile creation must require an explicit action"
+);
+check(
+  retention.includes('window.JHGOpenRetentionTab=function(tab="daily")'),
+  "retention.js: deterministic retention-tab opener is missing"
+);
+check(
+  retention.includes("renderSeq") && retention.includes("seq!==state.renderSeq"),
+  "retention.js: stale async tab renders are not guarded"
+);
+check(
+  routeGuard.includes('window.JHGOpenRetentionTab("blend")'),
+  "jwt-retry.js: JHG Blend must use the deterministic retention-tab opener"
+);
+check(
+  !routeGuard.includes("setTimeout(() => document.querySelector('[data-retention-tab=\"blend\"]')?.click(), 0)"),
+  "jwt-retry.js: timer-based Blend tab switching returned"
+);
 
 const localAssets = [...index.matchAll(/(?:src|href)="([^"?#]+)(?:[?#][^"]*)?"/g)]
   .map((match) => match[1])
