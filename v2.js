@@ -381,6 +381,10 @@
 
   async function enterSwipe() {
     await waitForAuthenticatedUser();
+    const prerequisitesStarted = Date.now();
+    while((typeof genreOptions === "undefined" || !Array.isArray(genreOptions) || genreOptions.length === 0) && Date.now() - prerequisitesStarted < 12000) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
     if(listenerProfile?.listener_group !== "overseas") {
       stopAllPlayers();
       state.activeId = null;
