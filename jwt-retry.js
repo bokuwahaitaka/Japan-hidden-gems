@@ -72,7 +72,7 @@
 
   function needsDiscoverProfile() {
     try {
-      return typeof listenerProfile !== "undefined" && listenerProfile?.listener_group !== "overseas";
+      return !listenerProfile || listenerProfile.listener_group !== "overseas";
     } catch {
       return true;
     }
@@ -103,9 +103,10 @@
     if (blend) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (typeof navigateTo === "function") {
+      if (typeof window.JHGOpenRetentionTab === "function") {
+        window.JHGOpenRetentionTab("blend");
+      } else if (typeof navigateTo === "function") {
         navigateTo("retention");
-        setTimeout(() => document.querySelector('[data-retention-tab="blend"]')?.click(), 0);
       }
     }
   }, true);
